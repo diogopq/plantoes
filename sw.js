@@ -1,4 +1,28 @@
-const CACHE_NAME = "plantoes-vet-v6";
+// Firebase Cloud Messaging - notificações em segundo plano.
+// Se notifications-config.js não estiver preenchido ainda, isso é ignorado silenciosamente.
+try {
+  importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+  importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+  importScripts('./notifications-config.js');
+
+  if (self.NOTIF_FIREBASE_CONFIG && self.NOTIF_FIREBASE_CONFIG.apiKey) {
+    firebase.initializeApp(self.NOTIF_FIREBASE_CONFIG);
+    const messaging = firebase.messaging();
+    messaging.onBackgroundMessage((payload) => {
+      const title = (payload.notification && payload.notification.title) || "Plantões";
+      const body = (payload.notification && payload.notification.body) || "";
+      self.registration.showNotification(title, {
+        body: body,
+        icon: "./icon-192.png",
+        badge: "./icon-192.png"
+      });
+    });
+  }
+} catch (e) {
+  // Firebase ainda não configurado ou indisponível - o app continua funcionando normalmente.
+}
+
+const CACHE_NAME = "plantoes-vet-v8";
 const ASSETS = [
   "./",
   "./index.html",

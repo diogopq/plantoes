@@ -11,6 +11,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- Firebase (só usado se notifications-config.js existir e tiver as chaves preenchidas) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
+<script src="notifications-config.js" defer onerror="window.__notifConfigMissing=true"></script>
 <style>
   :root{
     --bg:#EEF2EE;
@@ -362,6 +367,9 @@
         <img src="logo.png" alt="Dra. Laís Santos">
       </div>
       <div class="header-actions">
+        <button class="lock-btn" id="notifBtn" aria-label="Notificações" title="Notificações">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        </button>
         <button class="lock-btn" id="backupBtn" aria-label="Backup" title="Backup dos dados">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
         </button>
@@ -524,6 +532,28 @@
   <div class="last-backup" id="lastBackupText">Último backup: nunca</div>
   <div class="sheet-actions">
     <button class="btn btn-ghost" id="btnCloseBackup" style="flex:1;">Fechar</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheetNotif">
+  <div class="sheet-handle"></div>
+  <h2>Notificações</h2>
+  <p class="backup-sheet-text">Ative para receber avisos no celular mesmo com o app fechado, por exemplo lembretes de plantões pendentes de pagamento.</p>
+  <div id="notifUnsupported" style="display:none;" class="backup-sheet-text">Este navegador/dispositivo não tem suporte a notificações neste momento.</div>
+  <div id="notifBody">
+    <div class="toggle-row">
+      <div>
+        <div class="lbl-text" id="notifStatusText">Notificações desativadas</div>
+        <div class="lbl-sub" id="notifStatusSub">Toque para ativar</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="fNotifToggle">
+        <span class="track"></span>
+      </label>
+    </div>
+  </div>
+  <div class="sheet-actions">
+    <button class="btn btn-ghost" id="btnCloseNotif" style="flex:1;">Fechar</button>
   </div>
 </div>
 
@@ -825,8 +855,10 @@
     editingId = null;
     const sp = document.getElementById('sheetPaciente');
     const sb = document.getElementById('sheetBackup');
+    const sn = document.getElementById('sheetNotif');
     if(sp) sp.classList.remove('open');
     if(sb) sb.classList.remove('open');
+    if(sn) sn.classList.remove('open');
     editingPacId = null;
   }
 
@@ -891,15 +923,19 @@
     if(!dataVal){ toast("Informe a data do plantão"); return; }
     if(!valor || valor<=0){ toast("Informe um valor válido"); return; }
 
+    let savedItem;
     if(editingId){
       const item = plantoes.find(x=>x.id===editingId);
       Object.assign(item, {data:dataVal, local, valor, numPacientes, nomesPacientes, obs, recebido});
+      savedItem = item;
       toast("Plantão atualizado");
     } else {
-      plantoes.push({id:uid(), data:dataVal, local, valor, numPacientes, nomesPacientes, obs, recebido, createdAt:Date.now()});
+      savedItem = {id:uid(), data:dataVal, local, valor, numPacientes, nomesPacientes, obs, recebido, createdAt:Date.now()};
+      plantoes.push(savedItem);
       toast("Plantão salvo");
     }
     save();
+    syncPlantaoAgenda(savedItem);
     const savedDate = parseLocalDate(dataVal);
     currentDate = new Date(savedDate.getFullYear(), savedDate.getMonth(), 1);
     closeSheet();
@@ -908,8 +944,10 @@
 
   document.getElementById('btnDelete').addEventListener('click', ()=>{
     if(!editingId) return;
-    plantoes = plantoes.filter(x=>x.id!==editingId);
+    const deletedId = editingId;
+    plantoes = plantoes.filter(x=>x.id!==deletedId);
     save();
+    deleteSyncedAgenda(deletedId);
     closeSheet();
     render();
     toast("Plantão excluído");
@@ -1004,6 +1042,7 @@
 
   const sheetPaciente = document.getElementById('sheetPaciente');
   const sheetBackup = document.getElementById('sheetBackup');
+  const sheetNotif = document.getElementById('sheetNotif');
 
   const closeAllSheets = closeSheet;
 
@@ -1088,6 +1127,155 @@
   });
   document.getElementById('btnCloseBackup').addEventListener('click', closeAllSheets);
 
+  /* ================= NOTIFICAÇÕES PUSH (Firebase Cloud Messaging) ================= */
+  const NOTIF_ENABLED_KEY = "vet-notif-enabled";
+  let fcmMessaging = null;
+
+  function firebaseReady(){
+    return typeof firebase !== "undefined" &&
+      typeof window.NOTIF_FIREBASE_CONFIG === "object" &&
+      window.NOTIF_FIREBASE_CONFIG &&
+      window.NOTIF_FIREBASE_CONFIG.apiKey &&
+      window.NOTIF_VAPID_KEY;
+  }
+
+  function initFirebaseIfNeeded(){
+    if(fcmMessaging || !firebaseReady()) return fcmMessaging;
+    try{
+      if(!firebase.apps || !firebase.apps.length){
+        firebase.initializeApp(window.NOTIF_FIREBASE_CONFIG);
+      }
+      fcmMessaging = firebase.messaging();
+    }catch(e){ console.warn("Firebase init falhou", e); }
+    return fcmMessaging;
+  }
+
+  function updateNotifUI(){
+    const supported = ('Notification' in window) && ('serviceWorker' in navigator);
+    const configured = firebaseReady();
+    const unsupportedEl = document.getElementById('notifUnsupported');
+    const bodyEl = document.getElementById('notifBody');
+    const statusText = document.getElementById('notifStatusText');
+    const statusSub = document.getElementById('notifStatusSub');
+    const toggle = document.getElementById('fNotifToggle');
+
+    if(!supported || !configured){
+      unsupportedEl.style.display = "block";
+      unsupportedEl.textContent = !supported
+        ? "Este navegador/dispositivo não tem suporte a notificações neste momento."
+        : "As notificações ainda não foram configuradas neste app (falta o arquivo notifications-config.js com as chaves do Firebase).";
+      bodyEl.style.display = "none";
+      return;
+    }
+    unsupportedEl.style.display = "none";
+    bodyEl.style.display = "block";
+
+    const enabled = localStorage.getItem(NOTIF_ENABLED_KEY) === "1" && Notification.permission === "granted";
+    toggle.checked = enabled;
+    if(Notification.permission === "denied"){
+      statusText.textContent = "Notificações bloqueadas";
+      statusSub.textContent = "Ative nas configurações do navegador/celular para este site";
+    } else if(enabled){
+      statusText.textContent = "Notificações ativadas";
+      statusSub.textContent = "Você vai receber avisos mesmo com o app fechado";
+    } else {
+      statusText.textContent = "Notificações desativadas";
+      statusSub.textContent = "Toque para ativar";
+    }
+  }
+
+  /* ================= SINCRONIZAÇÃO DE AGENDA (só data + local, p/ lembretes) ================= */
+  function syncPlantaoAgenda(item){
+    if(!firebaseReady()) return;
+    try{
+      const db = firebase.firestore();
+      db.collection("plantoesAgenda").doc(item.id).set({
+        data: item.data,
+        local: item.local || "",
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(()=>{});
+    }catch(e){}
+  }
+
+  function deleteSyncedAgenda(id){
+    if(!firebaseReady()) return;
+    try{
+      firebase.firestore().collection("plantoesAgenda").doc(id).delete().catch(()=>{});
+    }catch(e){}
+  }
+
+  async function enableNotifications(){
+    if(!firebaseReady()){
+      toast("Notificações ainda não configuradas");
+      return false;
+    }
+    try{
+      const permission = await Notification.requestPermission();
+      if(permission !== "granted"){
+        toast("Permissão de notificação não concedida");
+        return false;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const messaging = initFirebaseIfNeeded();
+      if(!messaging){ toast("Não foi possível iniciar as notificações"); return false; }
+      const token = await messaging.getToken({ vapidKey: window.NOTIF_VAPID_KEY, serviceWorkerRegistration: reg });
+      if(!token){ toast("Não foi possível gerar o token de notificação"); return false; }
+
+      const db = firebase.firestore();
+      await db.collection("pushTokens").doc(token).set({
+        token: token,
+        app: "plantoes-vet",
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      localStorage.setItem(NOTIF_ENABLED_KEY, "1");
+      localStorage.setItem("vet-notif-token", token);
+      toast("Notificações ativadas");
+      return true;
+    }catch(e){
+      console.warn("Erro ao ativar notificações", e);
+      toast("Não foi possível ativar as notificações");
+      return false;
+    }
+  }
+
+  async function disableNotifications(){
+    try{
+      const oldToken = localStorage.getItem("vet-notif-token");
+      if(oldToken && firebaseReady()){
+        try{
+          const db = firebase.firestore();
+          await db.collection("pushTokens").doc(oldToken).delete();
+        }catch(e){}
+        const messaging = initFirebaseIfNeeded();
+        if(messaging){ try{ await messaging.deleteToken(); }catch(e){} }
+      }
+    }finally{
+      localStorage.removeItem(NOTIF_ENABLED_KEY);
+      localStorage.removeItem("vet-notif-token");
+      toast("Notificações desativadas");
+    }
+  }
+
+  document.getElementById('notifBtn').addEventListener('click', ()=>{
+    updateNotifUI();
+    overlay.classList.add('open');
+    sheetNotif.classList.add('open');
+  });
+  document.getElementById('btnCloseNotif').addEventListener('click', closeAllSheets);
+
+  document.getElementById('fNotifToggle').addEventListener('change', async (e)=>{
+    const checked = e.target.checked;
+    e.target.disabled = true;
+    if(checked){
+      const ok = await enableNotifications();
+      if(!ok) e.target.checked = false;
+    } else {
+      await disableNotifications();
+    }
+    e.target.disabled = false;
+    updateNotifUI();
+  });
+
   document.getElementById('btnExportBackup').addEventListener('click', ()=>{
     const payload = {
       app: "plantoes-vet-lais-santos",
@@ -1139,6 +1327,7 @@
         if(!item || !item.id) return;
         const idx = plantoes.findIndex(x=>x.id===item.id);
         if(idx>=0){ plantoes[idx] = item; updP++; } else { plantoes.push(item); addedP++; }
+        syncPlantaoAgenda(item);
       });
       (data.pacientes||[]).forEach(item=>{
         if(!item || !item.id) return;
