@@ -274,6 +274,19 @@
   .switch input:checked + .track{background:var(--paid);}
   .switch input:checked + .track::before{transform:translateX(19px);}
 
+  .check-row{display:flex;align-items:center;gap:10px;padding:2px 2px;}
+  .check-row input[type=checkbox]{width:19px;height:19px;accent-color:var(--brand);flex:none;}
+  .check-row label{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.3;}
+  .names-box{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+  .names-box input{
+    width:100%; border:1.5px solid var(--line); background:var(--paper);
+    border-radius:12px; padding:10px 13px; font-size:14px; font-family:inherit; color:var(--ink);
+  }
+  .names-box input:focus{outline:none;border-color:var(--brand);}
+  .names-box .name-idx{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); margin-bottom:2px; display:block;
+  }
+
   .sheet-actions{display:flex;gap:10px;margin-top:18px;}
   .btn{
     flex:1; border:none; border-radius:12px; padding:14px; font-size:14.5px; font-weight:700; cursor:pointer;
@@ -376,7 +389,18 @@
     </div>
   </div>
   <div class="field">
-    <label for="fObs">Observações <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <label for="fNumPacientes">Número de pacientes <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <input type="text" id="fNumPacientes" inputmode="numeric" pattern="[0-9]*" placeholder="Ex: 3" autocomplete="off">
+  </div>
+  <div class="field" id="namesToggleField" style="display:none;">
+    <div class="check-row">
+      <input type="checkbox" id="fInformarNomes">
+      <label for="fInformarNomes">Deseja informar os nomes dos pacientes?</label>
+    </div>
+    <div class="names-box" id="namesBox" style="display:none;"></div>
+  </div>
+  <div class="field">
+    <label for="fObs">Procedimentos <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
     <textarea id="fObs" placeholder="Ex: plantão noturno, troca com colega..."></textarea>
   </div>
   <div class="field">
@@ -610,6 +634,7 @@
             <div class="valor">${fmtMoney(p.valor)}</div>
           </div>
           <div class="local">${escapeHtml(p.local || "Local não informado")}</div>
+          ${(p.numPacientes || p.numPacientes===0) ? `<div class="obs">🐾 ${p.numPacientes} paciente${p.numPacientes===1?'':'s'}${(p.nomesPacientes && p.nomesPacientes.filter(Boolean).length) ? ': ' + p.nomesPacientes.filter(Boolean).map(escapeHtml).join(', ') : ''}</div>` : ""}
           ${p.obs ? `<div class="obs">${escapeHtml(p.obs)}</div>` : ""}
           <div class="row-bottom">
             ${p.recebido
@@ -651,8 +676,11 @@
       document.getElementById('fData').value = item.data;
       document.getElementById('fLocal').value = item.local || "";
       document.getElementById('fValor').value = item.valor || "";
+      document.getElementById('fNumPacientes').value = (item.numPacientes || item.numPacientes===0) ? item.numPacientes : "";
       document.getElementById('fObs').value = item.obs || "";
       document.getElementById('fRecebido').checked = !!item.recebido;
+      document.getElementById('fInformarNomes').checked = !!(item.nomesPacientes && item.nomesPacientes.length);
+      updateNamesUI(item.nomesPacientes || []);
     } else {
       const y = currentDate.getFullYear(), m = currentDate.getMonth();
       const today = new Date();
@@ -660,8 +688,11 @@
       document.getElementById('fData').value = defaultDate.toISOString().slice(0,10);
       document.getElementById('fLocal').value = "";
       document.getElementById('fValor').value = "";
+      document.getElementById('fNumPacientes').value = "";
       document.getElementById('fObs').value = "";
       document.getElementById('fRecebido').checked = false;
+      document.getElementById('fInformarNomes').checked = false;
+      updateNamesUI([]);
     }
     overlay.classList.add('open');
     sheet.classList.add('open');
@@ -672,6 +703,44 @@
     editingId = null;
   }
 
+  function updateNamesUI(existingNames){
+    const numRaw = document.getElementById('fNumPacientes').value.trim();
+    const num = numRaw === "" ? 0 : parseInt(numRaw, 10) || 0;
+    const toggleField = document.getElementById('namesToggleField');
+    const namesBox = document.getElementById('namesBox');
+    const checkbox = document.getElementById('fInformarNomes');
+
+    toggleField.style.display = num > 0 ? "block" : "none";
+    if(num <= 0){
+      checkbox.checked = false;
+      namesBox.style.display = "none";
+      namesBox.innerHTML = "";
+      return;
+    }
+
+    if(checkbox.checked){
+      namesBox.style.display = "flex";
+      const prevValues = existingNames && existingNames.length
+        ? existingNames
+        : Array.from(namesBox.querySelectorAll('.pname-input')).map(inp=>inp.value);
+      let html = "";
+      for(let i=0;i<num;i++){
+        const val = prevValues[i] ? escapeHtml(prevValues[i]) : "";
+        html += `<input type="text" class="pname-input" placeholder="Nome do paciente ${i+1}" value="${val}">`;
+      }
+      namesBox.innerHTML = html;
+    } else {
+      namesBox.style.display = "none";
+      namesBox.innerHTML = "";
+    }
+  }
+
+  document.getElementById('fNumPacientes').addEventListener('input', (e)=>{
+    e.target.value = e.target.value.replace(/[^0-9]/g, "");
+    updateNamesUI();
+  });
+  document.getElementById('fInformarNomes').addEventListener('change', ()=> updateNamesUI());
+
   document.getElementById('fabAdd').addEventListener('click', ()=>openSheet(null));
   document.getElementById('btnCancel').addEventListener('click', closeSheet);
   overlay.addEventListener('click', closeSheet);
@@ -680,6 +749,13 @@
     const dataVal = document.getElementById('fData').value;
     const local = document.getElementById('fLocal').value.trim();
     const valor = parseFloat(document.getElementById('fValor').value);
+    const numPacientesRaw = document.getElementById('fNumPacientes').value.trim();
+    const numPacientes = numPacientesRaw === "" ? null : parseInt(numPacientesRaw, 10);
+    const informarNomes = document.getElementById('fInformarNomes').checked;
+    let nomesPacientes = [];
+    if(informarNomes && numPacientes){
+      nomesPacientes = Array.from(document.querySelectorAll('.names-box .pname-input')).map(inp=>inp.value.trim());
+    }
     const obs = document.getElementById('fObs').value.trim();
     const recebido = document.getElementById('fRecebido').checked;
 
@@ -688,10 +764,10 @@
 
     if(editingId){
       const item = plantoes.find(x=>x.id===editingId);
-      Object.assign(item, {data:dataVal, local, valor, obs, recebido});
+      Object.assign(item, {data:dataVal, local, valor, numPacientes, nomesPacientes, obs, recebido});
       toast("Plantão atualizado");
     } else {
-      plantoes.push({id:uid(), data:dataVal, local, valor, obs, recebido, createdAt:Date.now()});
+      plantoes.push({id:uid(), data:dataVal, local, valor, numPacientes, nomesPacientes, obs, recebido, createdAt:Date.now()});
       toast("Plantão salvo");
     }
     save();
