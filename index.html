@@ -113,6 +113,17 @@
   }
   .lock-btn:active{background:rgba(255,255,255,0.24);}
   .tagline{font-size:12.5px;color:#C9DBD1;margin-top:10px;}
+  .header-actions{display:flex;gap:8px;flex:none;}
+  .tabs{display:flex;gap:4px;margin-top:16px;background:rgba(255,255,255,0.08);border-radius:12px;padding:4px;}
+  .tab-btn{flex:1;border:none;background:none;color:#C9DBD1;padding:9px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .tab-btn.active{background:#F7FAF8;color:var(--brand);}
+  .patients-summary{margin-top:16px;font-size:13px;color:#C9DBD1;}
+  .patients-summary strong{color:#fff;font-family:'JetBrains Mono',monospace;font-size:15px;}
+  .search-box input{
+    width:100%; border:1.5px solid var(--line); background:var(--paper);
+    border-radius:12px; padding:11px 14px; font-size:14px; font-family:inherit; color:var(--ink);
+  }
+  .search-box input:focus{outline:none;border-color:var(--brand);}
 
   .month-nav{display:flex;align-items:center;justify-content:space-between;margin-top:18px;}
   .month-nav button{
@@ -219,6 +230,19 @@
   .empty .sub{font-size:12.5px;color:#9AAAA0;margin-top:4px;}
 
   /* FAB */
+  .pat-card{
+    background:var(--paper); border-radius:16px; padding:14px; box-shadow:var(--shadow);
+    display:flex; justify-content:space-between; gap:10px; align-items:flex-start;
+  }
+  .pat-info{min-width:0;}
+  .pat-info .pat-name{font-family:'Fraunces',serif;font-weight:600;font-size:15.5px;color:var(--ink);}
+  .pat-info .pat-meta{font-size:12.5px;color:var(--ink-soft);margin-top:3px;}
+  .pat-info .pat-obs{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+  .backup-sheet-text{font-size:13px;color:var(--ink-soft);line-height:1.55;margin:0 0 18px;}
+  .backup-row{display:flex;flex-direction:column;gap:10px;}
+  .last-backup{font-size:12px;color:var(--ink-soft);margin-top:16px;text-align:center;}
+  .last-backup.warn{color:var(--amber);font-weight:600;}
+
   .fab{
     position:fixed; right:20px; bottom:calc(24px + env(safe-area-inset-bottom));
     width:58px;height:58px;border-radius:50%;
@@ -246,7 +270,7 @@
   .sheet h2{font-family:'Fraunces',serif;font-size:19px;margin:0 0 16px;color:var(--brand);}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;}
-  .field input, .field textarea{
+  .field input, .field textarea, .field select{
     width:100%; border:1.5px solid var(--line); background:var(--paper);
     border-radius:12px; padding:12px 13px; font-size:15px; font-family:inherit; color:var(--ink);
   }
@@ -335,34 +359,59 @@
       <div class="brand-card">
         <img src="logo.png" alt="Dra. Laís Santos">
       </div>
-      <button class="lock-btn" id="lockBtn" aria-label="Bloquear app" title="Bloquear">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
-      </button>
+      <div class="header-actions">
+        <button class="lock-btn" id="backupBtn" aria-label="Backup" title="Backup dos dados">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        </button>
+        <button class="lock-btn" id="lockBtn" aria-label="Bloquear app" title="Bloquear">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+        </button>
+      </div>
     </div>
     <div class="tagline">Controle de plantões veterinários</div>
 
-    <div class="month-nav">
-      <button id="prevMonth" aria-label="Mês anterior">‹</button>
-      <div class="month-label" id="monthLabel">—</div>
-      <button id="nextMonth" aria-label="Próximo mês">›</button>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="plantoes">Plantões</button>
+      <button class="tab-btn" data-tab="pacientes">Pacientes</button>
     </div>
 
-    <div class="stats">
-      <div class="stat"><span class="num" id="statTotal">R$ 0</span><span class="lbl">Total</span></div>
-      <div class="stat paid"><span class="num" id="statPaid">R$ 0</span><span class="lbl">Recebido</span></div>
-      <div class="stat pend"><span class="num" id="statPend">R$ 0</span><span class="lbl">Pendente</span></div>
+    <div id="plantoesHeaderBlock">
+      <div class="month-nav">
+        <button id="prevMonth" aria-label="Mês anterior">‹</button>
+        <div class="month-label" id="monthLabel">—</div>
+        <button id="nextMonth" aria-label="Próximo mês">›</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><span class="num" id="statTotal">R$ 0</span><span class="lbl">Total</span></div>
+        <div class="stat paid"><span class="num" id="statPaid">R$ 0</span><span class="lbl">Recebido</span></div>
+        <div class="stat pend"><span class="num" id="statPend">R$ 0</span><span class="lbl">Pendente</span></div>
+      </div>
+    </div>
+
+    <div id="pacientesHeaderBlock" style="display:none;">
+      <div class="patients-summary"><strong id="statPacientesTotal">0</strong> paciente(s) cadastrado(s)</div>
     </div>
   </div>
 </header>
 
 <div class="wrap">
-  <div class="filters">
-    <div class="chip active" data-filter="todos">Todos</div>
-    <div class="chip" data-filter="pendente">Pendentes</div>
-    <div class="chip" data-filter="recebido">Recebidos</div>
+  <div id="plantoesView">
+    <div class="filters">
+      <div class="chip active" data-filter="todos">Todos</div>
+      <div class="chip" data-filter="pendente">Pendentes</div>
+      <div class="chip" data-filter="recebido">Recebidos</div>
+    </div>
+
+    <div class="list" id="list"></div>
   </div>
 
-  <div class="list" id="list"></div>
+  <div id="pacientesView" style="display:none;">
+    <div class="search-box">
+      <input type="text" id="searchPacientes" placeholder="Buscar por nome do paciente ou tutor(a)...">
+    </div>
+    <div class="list" id="listPacientes"></div>
+  </div>
 </div>
 
 <button class="fab" id="fabAdd" aria-label="Adicionar plantão">+</button>
@@ -400,7 +449,7 @@
     <div class="names-box" id="namesBox" style="display:none;"></div>
   </div>
   <div class="field">
-    <label for="fObs">Procedimentos <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <label for="fObs">Observações <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
     <textarea id="fObs" placeholder="Ex: plantão noturno, troca com colega..."></textarea>
   </div>
   <div class="field">
@@ -423,20 +472,80 @@
   <button class="btn-delete" id="btnDelete" style="display:none;">Excluir plantão</button>
 </div>
 
+<div class="sheet" id="sheetPaciente">
+  <div class="sheet-handle"></div>
+  <h2 id="sheetTitlePac">Novo paciente</h2>
+
+  <div class="field">
+    <label for="fPacNome">Nome do paciente</label>
+    <input type="text" id="fPacNome" placeholder="Ex: Thor">
+  </div>
+  <div class="field">
+    <label for="fPacEspecie">Espécie</label>
+    <select id="fPacEspecie">
+      <option value="">Selecione</option>
+      <option value="Cão">Cão</option>
+      <option value="Gato">Gato</option>
+      <option value="Ave">Ave</option>
+      <option value="Outro">Outro</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="fPacTutor">Tutor(a) <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <input type="text" id="fPacTutor" placeholder="Nome do dono/responsável">
+  </div>
+  <div class="field">
+    <label for="fPacTelefone">Telefone do tutor <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <input type="tel" id="fPacTelefone" placeholder="(00) 00000-0000">
+  </div>
+  <div class="field">
+    <label for="fPacObs">Observações <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <textarea id="fPacObs" placeholder="Ex: alergias, condições, temperamento..."></textarea>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn btn-ghost" id="btnCancelPac">Cancelar</button>
+    <button class="btn btn-primary" id="btnSavePac">Salvar</button>
+  </div>
+  <button class="btn-delete" id="btnDeletePac" style="display:none;">Excluir paciente</button>
+</div>
+
+<div class="sheet" id="sheetBackup">
+  <div class="sheet-handle"></div>
+  <h2>Backup dos dados</h2>
+  <p class="backup-sheet-text">Seus plantões e pacientes ficam salvos apenas neste aparelho. Exporte um backup de vez em quando e guarde o arquivo em um lugar seguro (e-mail, Drive, etc.) para não correr o risco de perder tudo se trocar de celular ou limpar o navegador.</p>
+  <div class="backup-row">
+    <button class="btn btn-primary" id="btnExportBackup">⬇ Exportar backup (.json)</button>
+    <button class="btn btn-ghost" id="btnImportBackup">⬆ Importar backup</button>
+  </div>
+  <input type="file" id="importFileInput" accept="application/json" style="display:none;">
+  <div class="last-backup" id="lastBackupText">Último backup: nunca</div>
+  <div class="sheet-actions">
+    <button class="btn btn-ghost" id="btnCloseBackup" style="flex:1;">Fechar</button>
+  </div>
+</div>
+
+<datalist id="patientsDatalist"></datalist>
+
 <div class="toast" id="toast"></div>
 
 <script>
 (function(){
   "use strict";
   const STORAGE_KEY = "vet-plantoes-v1";
+  const PACIENTES_KEY = "vet-pacientes-v1";
+  const LAST_BACKUP_KEY = "vet-last-backup";
   const PIN_KEY = "vet-plantoes-pin";
   const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
   const DIAS_SEMANA = ["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
 
   let plantoes = load();
+  let pacientes = loadPacientes();
   let currentDate = new Date();
   let filter = "todos";
   let editingId = null;
+  let editingPacId = null;
+  let activeTab = "plantoes";
 
   function load(){
     try{
@@ -446,6 +555,15 @@
   }
   function save(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(plantoes));
+  }
+  function loadPacientes(){
+    try{
+      const raw = localStorage.getItem(PACIENTES_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function savePacientes(){
+    localStorage.setItem(PACIENTES_KEY, JSON.stringify(pacientes));
   }
   function uid(){
     return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -558,6 +676,8 @@
     loginScreen.style.display = "none";
     document.getElementById('appRoot').style.display = "block";
     render();
+    renderPacientes();
+    refreshPatientsDatalist();
   }
 
   function lockApp(){
@@ -701,6 +821,11 @@
     overlay.classList.remove('open');
     sheet.classList.remove('open');
     editingId = null;
+    const sp = document.getElementById('sheetPaciente');
+    const sb = document.getElementById('sheetBackup');
+    if(sp) sp.classList.remove('open');
+    if(sb) sb.classList.remove('open');
+    editingPacId = null;
   }
 
   function updateNamesUI(existingNames){
@@ -726,7 +851,7 @@
       let html = "";
       for(let i=0;i<num;i++){
         const val = prevValues[i] ? escapeHtml(prevValues[i]) : "";
-        html += `<input type="text" class="pname-input" placeholder="Nome do paciente ${i+1}" value="${val}">`;
+        html += `<input type="text" class="pname-input" list="patientsDatalist" placeholder="Nome do paciente ${i+1}" value="${val}">`;
       }
       namesBox.innerHTML = html;
     } else {
@@ -802,6 +927,228 @@
       filter = chip.dataset.filter;
       render();
     });
+  });
+
+  /* ================= TABS ================= */
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      activeTab = btn.dataset.tab;
+      const isPlant = activeTab === "plantoes";
+      document.getElementById('plantoesHeaderBlock').style.display = isPlant ? "block" : "none";
+      document.getElementById('pacientesHeaderBlock').style.display = isPlant ? "none" : "block";
+      document.getElementById('plantoesView').style.display = isPlant ? "block" : "none";
+      document.getElementById('pacientesView').style.display = isPlant ? "none" : "block";
+      document.getElementById('fabAdd').setAttribute('aria-label', isPlant ? 'Adicionar plantão' : 'Adicionar paciente');
+      if(!isPlant) renderPacientes();
+    });
+  });
+
+  /* ================= PACIENTES ================= */
+  function refreshPatientsDatalist(){
+    const dl = document.getElementById('patientsDatalist');
+    dl.innerHTML = pacientes.map(p=>`<option value="${escapeHtml(p.nome)}">`).join('');
+  }
+
+  function renderPacientes(){
+    document.getElementById('statPacientesTotal').textContent = pacientes.length;
+
+    const term = document.getElementById('searchPacientes').value.trim().toLowerCase();
+    let filtered = pacientes;
+    if(term){
+      filtered = pacientes.filter(p =>
+        (p.nome||'').toLowerCase().includes(term) || (p.tutor||'').toLowerCase().includes(term)
+      );
+    }
+    filtered = [...filtered].sort((a,b)=> (a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
+
+    const listEl = document.getElementById('listPacientes');
+    listEl.innerHTML = "";
+
+    if(filtered.length === 0){
+      listEl.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4"><path d="M50 30c-9 0-15 7-15 16 0 6 3 10 7 14l8 8 8-8c4-4 7-8 7-14 0-9-6-16-15-16z"/><circle cx="35" cy="40" r="4"/><circle cx="65" cy="40" r="4"/><circle cx="24" cy="55" r="3.5"/><circle cx="76" cy="55" r="3.5"/></svg>
+        <p>${term ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}</p>
+        <div class="sub">${term ? 'Tente buscar por outro nome' : 'Toque no + para cadastrar o primeiro'}</div>
+      </div>`;
+      return;
+    }
+
+    filtered.forEach(p=>{
+      const card = document.createElement('div');
+      card.className = "pat-card";
+      card.innerHTML = `
+        <div class="pat-info">
+          <div class="pat-name">${escapeHtml(p.nome)}</div>
+          <div class="pat-meta">${escapeHtml(p.especie || "Espécie não informada")}${p.tutor ? ' · tutor(a): ' + escapeHtml(p.tutor) : ''}</div>
+          ${p.telefone ? `<div class="pat-meta">📞 ${escapeHtml(p.telefone)}</div>` : ""}
+          ${p.obs ? `<div class="pat-obs">${escapeHtml(p.obs)}</div>` : ""}
+        </div>
+        <button class="icon-btn" data-editpac="${p.id}" aria-label="Editar paciente">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+        </button>`;
+      listEl.appendChild(card);
+    });
+
+    listEl.querySelectorAll('[data-editpac]').forEach(btn=>{
+      btn.addEventListener('click', ()=> openSheetPaciente(btn.dataset.editpac));
+    });
+  }
+
+  document.getElementById('searchPacientes').addEventListener('input', renderPacientes);
+
+  const sheetPaciente = document.getElementById('sheetPaciente');
+  const sheetBackup = document.getElementById('sheetBackup');
+
+  const closeAllSheets = closeSheet;
+
+  function openSheetPaciente(id){
+    editingPacId = id || null;
+    const isEdit = !!editingPacId;
+    document.getElementById('sheetTitlePac').textContent = isEdit ? "Editar paciente" : "Novo paciente";
+    document.getElementById('btnDeletePac').style.display = isEdit ? "block" : "none";
+
+    if(isEdit){
+      const item = pacientes.find(x=>x.id===editingPacId);
+      document.getElementById('fPacNome').value = item.nome || "";
+      document.getElementById('fPacEspecie').value = item.especie || "";
+      document.getElementById('fPacTutor').value = item.tutor || "";
+      document.getElementById('fPacTelefone').value = item.telefone || "";
+      document.getElementById('fPacObs').value = item.obs || "";
+    } else {
+      document.getElementById('fPacNome').value = "";
+      document.getElementById('fPacEspecie').value = "";
+      document.getElementById('fPacTutor').value = "";
+      document.getElementById('fPacTelefone').value = "";
+      document.getElementById('fPacObs').value = "";
+    }
+    overlay.classList.add('open');
+    sheetPaciente.classList.add('open');
+  }
+
+  document.getElementById('btnCancelPac').addEventListener('click', closeAllSheets);
+
+  document.getElementById('btnSavePac').addEventListener('click', ()=>{
+    const nome = document.getElementById('fPacNome').value.trim();
+    const especie = document.getElementById('fPacEspecie').value;
+    const tutor = document.getElementById('fPacTutor').value.trim();
+    const telefone = document.getElementById('fPacTelefone').value.trim();
+    const obs = document.getElementById('fPacObs').value.trim();
+
+    if(!nome){ toast("Informe o nome do paciente"); return; }
+
+    if(editingPacId){
+      const item = pacientes.find(x=>x.id===editingPacId);
+      Object.assign(item, {nome, especie, tutor, telefone, obs});
+      toast("Paciente atualizado");
+    } else {
+      pacientes.push({id:uid(), nome, especie, tutor, telefone, obs, createdAt:Date.now()});
+      toast("Paciente cadastrado");
+    }
+    savePacientes();
+    closeAllSheets();
+    renderPacientes();
+    refreshPatientsDatalist();
+  });
+
+  document.getElementById('btnDeletePac').addEventListener('click', ()=>{
+    if(!editingPacId) return;
+    pacientes = pacientes.filter(x=>x.id!==editingPacId);
+    savePacientes();
+    closeAllSheets();
+    renderPacientes();
+    refreshPatientsDatalist();
+    toast("Paciente excluído");
+  });
+
+  /* ================= BACKUP / RESTAURAÇÃO ================= */
+  function updateLastBackupInfo(){
+    const iso = localStorage.getItem(LAST_BACKUP_KEY);
+    const el = document.getElementById('lastBackupText');
+    if(!iso){
+      el.textContent = "Último backup: nunca";
+      el.classList.add('warn');
+      return;
+    }
+    const d = new Date(iso);
+    const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+    el.textContent = "Último backup: " + d.toLocaleDateString('pt-BR') + " às " + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    el.classList.toggle('warn', days >= 14);
+  }
+
+  document.getElementById('backupBtn').addEventListener('click', ()=>{
+    updateLastBackupInfo();
+    overlay.classList.add('open');
+    sheetBackup.classList.add('open');
+  });
+  document.getElementById('btnCloseBackup').addEventListener('click', closeAllSheets);
+
+  document.getElementById('btnExportBackup').addEventListener('click', ()=>{
+    const payload = {
+      app: "plantoes-vet-lais-santos",
+      exportedAt: new Date().toISOString(),
+      plantoes: plantoes,
+      pacientes: pacientes
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `backup-plantoes-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString());
+    updateLastBackupInfo();
+    toast("Backup exportado");
+  });
+
+  document.getElementById('btnImportBackup').addEventListener('click', ()=>{
+    document.getElementById('importFileInput').click();
+  });
+
+  document.getElementById('importFileInput').addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    e.target.value = "";
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      let data;
+      try{
+        data = JSON.parse(ev.target.result);
+      }catch(err){
+        toast("Arquivo inválido");
+        return;
+      }
+      if(!data || (!Array.isArray(data.plantoes) && !Array.isArray(data.pacientes))){
+        toast("Arquivo de backup não reconhecido");
+        return;
+      }
+      const okConfirm = confirm("Importar este backup? Os itens serão mesclados com os dados que já existem neste aparelho (nada é apagado).");
+      if(!okConfirm) return;
+
+      let addedP=0, updP=0, addedPac=0, updPac=0;
+      (data.plantoes||[]).forEach(item=>{
+        if(!item || !item.id) return;
+        const idx = plantoes.findIndex(x=>x.id===item.id);
+        if(idx>=0){ plantoes[idx] = item; updP++; } else { plantoes.push(item); addedP++; }
+      });
+      (data.pacientes||[]).forEach(item=>{
+        if(!item || !item.id) return;
+        const idx = pacientes.findIndex(x=>x.id===item.id);
+        if(idx>=0){ pacientes[idx] = item; updPac++; } else { pacientes.push(item); addedPac++; }
+      });
+      save();
+      savePacientes();
+      render();
+      renderPacientes();
+      refreshPatientsDatalist();
+      toast(`Importado: ${addedP+addedPac} novo(s), ${updP+updPac} atualizado(s)`);
+    };
+    reader.readAsText(file);
   });
 
   /* ================= PWA: service worker (hosted files) ================= */
