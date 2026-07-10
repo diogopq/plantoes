@@ -866,7 +866,9 @@
   });
   document.getElementById('fInformarNomes').addEventListener('change', ()=> updateNamesUI());
 
-  document.getElementById('fabAdd').addEventListener('click', ()=>openSheet(null));
+  document.getElementById('fabAdd').addEventListener('click', ()=>{
+    if(activeTab === "plantoes") openSheet(null); else openSheetPaciente(null);
+  });
   document.getElementById('btnCancel').addEventListener('click', closeSheet);
   overlay.addEventListener('click', closeSheet);
 
