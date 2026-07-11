@@ -11,7 +11,7 @@ jobs:
   enviar-lembrete:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Instalar firebase-admin
         run: npm install firebase-admin@12
@@ -20,3 +20,4 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node automation/scripts/send-lembretes.js
+
