@@ -710,6 +710,11 @@
     render();
     renderPacientes();
     refreshPatientsDatalist();
+    // Se as notificações já estavam ativadas antes, prepara o recebimento
+    // em primeiro plano sem precisar abrir a tela de notificações de novo.
+    if(localStorage.getItem(NOTIF_ENABLED_KEY) === "1" && typeof Notification !== "undefined" && Notification.permission === "granted"){
+      initFirebaseIfNeeded();
+    }
   }
 
   function lockApp(){
@@ -1161,6 +1166,24 @@
     if(!ensureFirebaseApp()) return null;
     try{
       fcmMessaging = firebase.messaging();
+      // Com o app ABERTO (primeiro plano), o navegador não mostra a notificação
+      // sozinho — precisamos exibir manualmente aqui.
+      fcmMessaging.onMessage((payload)=>{
+        const title = (payload.notification && payload.notification.title) || "Plantões";
+        const body = (payload.notification && payload.notification.body) || "";
+        toast(title + (body ? ": " + body : ""));
+        if(Notification.permission === "granted"){
+          try{
+            navigator.serviceWorker.getRegistration().then((reg)=>{
+              if(reg){
+                reg.showNotification(title, { body, icon: "./icon-192.png", badge: "./icon-192.png" });
+              } else {
+                new Notification(title, { body, icon: "./icon-192.png" });
+              }
+            });
+          }catch(e){ console.warn("Falha ao exibir notificação em primeiro plano", e); }
+        }
+      });
     }catch(e){ console.warn("Firebase messaging falhou", e); }
     return fcmMessaging;
   }

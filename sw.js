@@ -22,7 +22,7 @@ try {
   // Firebase ainda não configurado ou indisponível - o app continua funcionando normalmente.
 }
 
-const CACHE_NAME = "plantoes-vet-v11";
+const CACHE_NAME = "plantoes-vet-v12";
 const ASSETS = [
   "./",
   "./index.html",
