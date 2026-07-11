@@ -1131,12 +1131,19 @@
   const NOTIF_ENABLED_KEY = "vet-notif-enabled";
   let fcmMessaging = null;
 
+  function getCleanVapidKey(){
+    // Remove espaços, quebras de linha e aspas que às vezes vêm junto ao colar a chave.
+    const raw = window.NOTIF_VAPID_KEY || "";
+    return String(raw).trim().replace(/^['"]|['"]$/g, "");
+  }
+
   function firebaseReady(){
+    const vapid = getCleanVapidKey();
     return typeof firebase !== "undefined" &&
       typeof window.NOTIF_FIREBASE_CONFIG === "object" &&
       window.NOTIF_FIREBASE_CONFIG &&
-      window.NOTIF_FIREBASE_CONFIG.apiKey &&
-      window.NOTIF_VAPID_KEY;
+      !!window.NOTIF_FIREBASE_CONFIG.apiKey &&
+      vapid.length > 60; // chaves VAPID válidas têm ~87 caracteres
   }
 
   function initFirebaseIfNeeded(){
@@ -1218,7 +1225,7 @@
       const reg = await navigator.serviceWorker.ready;
       const messaging = initFirebaseIfNeeded();
       if(!messaging){ toast("Não foi possível iniciar as notificações"); return false; }
-      const token = await messaging.getToken({ vapidKey: window.NOTIF_VAPID_KEY, serviceWorkerRegistration: reg });
+      const token = await messaging.getToken({ vapidKey: getCleanVapidKey(), serviceWorkerRegistration: reg });
       if(!token){ toast("Não foi possível gerar o token de notificação"); return false; }
 
       const db = firebase.firestore();
@@ -1233,7 +1240,13 @@
       return true;
     }catch(e){
       console.warn("Erro ao ativar notificações", e);
-      toast("Não foi possível ativar as notificações");
+      if(e && e.name === "InvalidAccessError"){
+        toast("Chave VAPID inválida — confira o notifications-config.js");
+      } else if(e && e.name === "NotAllowedError"){
+        toast("Permissão de notificação bloqueada pelo navegador");
+      } else {
+        toast("Não foi possível ativar as notificações");
+      }
       return false;
     }
   }
