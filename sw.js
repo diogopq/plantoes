@@ -1,28 +1,43 @@
-// Firebase Cloud Messaging - notificações em segundo plano.
-// Se notifications-config.js não estiver preenchido ainda, isso é ignorado silenciosamente.
-try {
-  importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
-  importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
-  importScripts('./notifications-config.js');
-
-  if (self.NOTIF_FIREBASE_CONFIG && self.NOTIF_FIREBASE_CONFIG.apiKey) {
-    firebase.initializeApp(self.NOTIF_FIREBASE_CONFIG);
-    const messaging = firebase.messaging();
-    messaging.onBackgroundMessage((payload) => {
-      const title = (payload.data && payload.data.title) || (payload.notification && payload.notification.title) || "Plantões";
-      const body = (payload.data && payload.data.body) || (payload.notification && payload.notification.body) || "";
-      self.registration.showNotification(title, {
-        body: body,
-        icon: "./icon-192.png",
-        badge: "./icon-192.png"
-      });
-    });
+// Notificações push - escutando o evento nativo do navegador diretamente,
+// sem depender da lógica automática/interna do SDK do Firebase (que decide
+// sozinha, de forma pouco previsível, quando exibir ou não a notificação).
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch (e) {
+    payload = {};
   }
-} catch (e) {
-  // Firebase ainda não configurado ou indisponível - o app continua funcionando normalmente.
-}
 
-const CACHE_NAME = "plantoes-vet-v13";
+  // Aceita tanto mensagens no formato "data" (o que o app manda) quanto
+  // "notification" (caso um dia seja enviado assim também).
+  const info = payload.data || payload.notification || {};
+  const title = info.title || "Plantões";
+  const body = info.body || "";
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: body,
+      icon: "./icon-192.png",
+      badge: "./icon-192.png",
+      tag: "plantoes-lembrete",
+      renotify: true,
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
+      const hadWindow = clientsArr.find((c) => "focus" in c);
+      if (hadWindow) return hadWindow.focus();
+      if (self.clients.openWindow) return self.clients.openWindow("./index.html");
+    })
+  );
+});
+
+const CACHE_NAME = "plantoes-vet-v14";
 const ASSETS = [
   "./",
   "./index.html",
