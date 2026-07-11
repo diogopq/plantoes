@@ -9,8 +9,8 @@ try {
     firebase.initializeApp(self.NOTIF_FIREBASE_CONFIG);
     const messaging = firebase.messaging();
     messaging.onBackgroundMessage((payload) => {
-      const title = (payload.notification && payload.notification.title) || "Plantões";
-      const body = (payload.notification && payload.notification.body) || "";
+      const title = (payload.data && payload.data.title) || (payload.notification && payload.notification.title) || "Plantões";
+      const body = (payload.data && payload.data.body) || (payload.notification && payload.notification.body) || "";
       self.registration.showNotification(title, {
         body: body,
         icon: "./icon-192.png",
@@ -22,7 +22,7 @@ try {
   // Firebase ainda não configurado ou indisponível - o app continua funcionando normalmente.
 }
 
-const CACHE_NAME = "plantoes-vet-v12";
+const CACHE_NAME = "plantoes-vet-v13";
 const ASSETS = [
   "./",
   "./index.html",

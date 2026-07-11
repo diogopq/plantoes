@@ -76,10 +76,19 @@ async function main() {
   }
   const tokens = tokensSnap.docs.map((d) => d.id);
 
+  const title = process.env.NOTIF_TITLE || "Plantão hoje 🐾";
   const message = {
-    notification: {
-      title: process.env.NOTIF_TITLE || "Plantão hoje 🐾",
+    // Mensagem "somente dados" (sem a chave "notification"): assim a exibição
+    // fica sempre a cargo do nosso próprio código (app ou service worker),
+    // em vez do navegador decidir sozinho se mostra ou não.
+    data: {
+      title,
       body,
+    },
+    webpush: {
+      headers: {
+        Urgency: "high",
+      },
     },
     tokens,
   };
