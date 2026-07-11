@@ -21,4 +21,4 @@ window.NOTIF_FIREBASE_CONFIG = {
 // Chave VAPID (Web Push certificate).
 // Onde encontrar: Firebase Console → Configurações do projeto → aba "Cloud Messaging"
 // → seção "Certificados push da Web" → gerar par de chaves → copiar a chave pública.
-window.NOTIF_VAPID_KEY = "lRw1Ty3B9qnMdTUTz0If-BK4y0gCnEUN8IXTh8F3QOY";
+window.NOTIF_VAPID_KEY = "BDMZGOES63Q_j1TslIwHVdUSAgkZrtm5ijVaDDcGPFmyBHfkRKH7d2eCkdI9YCPds0WYQ2UNa-BSM4rWLYcSAo4";
