@@ -1146,14 +1146,22 @@
       vapid.length > 60; // chaves VAPID válidas têm ~87 caracteres
   }
 
-  function initFirebaseIfNeeded(){
-    if(fcmMessaging || !firebaseReady()) return fcmMessaging;
+  function ensureFirebaseApp(){
+    if(!firebaseReady()) return false;
     try{
       if(!firebase.apps || !firebase.apps.length){
         firebase.initializeApp(window.NOTIF_FIREBASE_CONFIG);
       }
+      return true;
+    }catch(e){ console.warn("Firebase init falhou", e); return false; }
+  }
+
+  function initFirebaseIfNeeded(){
+    if(fcmMessaging) return fcmMessaging;
+    if(!ensureFirebaseApp()) return null;
+    try{
       fcmMessaging = firebase.messaging();
-    }catch(e){ console.warn("Firebase init falhou", e); }
+    }catch(e){ console.warn("Firebase messaging falhou", e); }
     return fcmMessaging;
   }
 
@@ -1193,7 +1201,7 @@
 
   /* ================= SINCRONIZAÇÃO DE AGENDA (só data + local, p/ lembretes) ================= */
   function syncPlantaoAgenda(item){
-    if(!firebaseReady()) return;
+    if(!ensureFirebaseApp()) return;
     try{
       const db = firebase.firestore();
       db.collection("plantoesAgenda").doc(item.id).set({
@@ -1210,7 +1218,7 @@
   }
 
   function deleteSyncedAgenda(id){
-    if(!firebaseReady()) return;
+    if(!ensureFirebaseApp()) return;
     try{
       firebase.firestore().collection("plantoesAgenda").doc(id).delete()
         .then(()=> console.log("[agenda] removido:", id))
@@ -1261,7 +1269,7 @@
   async function disableNotifications(){
     try{
       const oldToken = localStorage.getItem("vet-notif-token");
-      if(oldToken && firebaseReady()){
+      if(oldToken && ensureFirebaseApp()){
         try{
           const db = firebase.firestore();
           await db.collection("pushTokens").doc(oldToken).delete();
