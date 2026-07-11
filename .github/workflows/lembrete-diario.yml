@@ -1,0 +1,22 @@
+name: Lembrete diário de plantões
+
+on:
+  schedule:
+    # 11:00 UTC = 08:00 no horário de Brasília (sem horário de verão desde 2019)
+    - cron: "0 11 * * *"
+  workflow_dispatch: {}
+    # Permite rodar manualmente pela aba "Actions" do GitHub, útil para testar.
+
+jobs:
+  enviar-lembrete:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar firebase-admin
+        run: npm install firebase-admin@12
+
+      - name: Enviar notificação
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node automation/scripts/send-lembretes.js
