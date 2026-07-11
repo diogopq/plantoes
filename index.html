@@ -1200,15 +1200,22 @@
         data: item.data,
         local: item.local || "",
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).catch(()=>{});
-    }catch(e){}
+      }).then(()=>{
+        console.log("[agenda] sincronizado:", item.id, item.data);
+      }).catch((err)=>{
+        console.warn("[agenda] falha ao sincronizar plantão", item.id, err && err.code, err && err.message);
+        toast("Plantão salvo, mas o lembrete não sincronizou (veja o console)");
+      });
+    }catch(e){ console.warn("[agenda] erro inesperado", e); }
   }
 
   function deleteSyncedAgenda(id){
     if(!firebaseReady()) return;
     try{
-      firebase.firestore().collection("plantoesAgenda").doc(id).delete().catch(()=>{});
-    }catch(e){}
+      firebase.firestore().collection("plantoesAgenda").doc(id).delete()
+        .then(()=> console.log("[agenda] removido:", id))
+        .catch((err)=> console.warn("[agenda] falha ao remover do Firestore", id, err && err.code));
+    }catch(e){ console.warn("[agenda] erro inesperado", e); }
   }
 
   async function enableNotifications(){
