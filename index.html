@@ -383,6 +383,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="plantoes">Plantões</button>
       <button class="tab-btn" data-tab="pacientes">Pacientes</button>
+      <button class="tab-btn" data-tab="agenda">Agenda</button>
     </div>
 
     <div id="plantoesHeaderBlock">
@@ -401,6 +402,15 @@
 
     <div id="pacientesHeaderBlock" style="display:none;">
       <div class="patients-summary"><strong id="statPacientesTotal">0</strong> paciente(s) cadastrado(s)</div>
+    </div>
+
+    <div id="agendaHeaderBlock" style="display:none;">
+      <div class="month-nav">
+        <button id="prevMonthAgenda" aria-label="Mês anterior">‹</button>
+        <div class="month-label" id="monthLabelAgenda">—</div>
+        <button id="nextMonthAgenda" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="patients-summary"><strong id="statAgendaTotal">0</strong> compromisso(s) este mês</div>
     </div>
   </div>
 </header>
@@ -421,6 +431,10 @@
       <input type="text" id="searchPacientes" placeholder="Buscar por nome do paciente ou tutor(a)...">
     </div>
     <div class="list" id="listPacientes"></div>
+  </div>
+
+  <div id="agendaView" style="display:none;">
+    <div class="list" id="listAgenda"></div>
   </div>
 </div>
 
@@ -520,6 +534,38 @@
   <button class="btn-delete" id="btnDeletePac" style="display:none;">Excluir paciente</button>
 </div>
 
+<div class="sheet" id="sheetAgenda">
+  <div class="sheet-handle"></div>
+  <h2 id="sheetTitleAgenda">Novo compromisso</h2>
+
+  <div class="field">
+    <label for="fAgTitulo">Título</label>
+    <input type="text" id="fAgTitulo" placeholder="Ex: Consulta médica, aniversário...">
+  </div>
+  <div class="field">
+    <label for="fAgData">Data</label>
+    <input type="date" id="fAgData">
+  </div>
+  <div class="field">
+    <label for="fAgHora">Horário <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <input type="time" id="fAgHora">
+  </div>
+  <div class="field">
+    <label for="fAgLocal">Local <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <input type="text" id="fAgLocal" placeholder="Ex: Consultório, casa da família...">
+  </div>
+  <div class="field">
+    <label for="fAgObs">Observações <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <textarea id="fAgObs" placeholder="Detalhes, o que levar, com quem é..."></textarea>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn btn-ghost" id="btnCancelAgenda">Cancelar</button>
+    <button class="btn btn-primary" id="btnSaveAgenda">Salvar</button>
+  </div>
+  <button class="btn-delete" id="btnDeleteAgenda" style="display:none;">Excluir compromisso</button>
+</div>
+
 <div class="sheet" id="sheetBackup">
   <div class="sheet-handle"></div>
   <h2>Backup dos dados</h2>
@@ -566,6 +612,7 @@
   "use strict";
   const STORAGE_KEY = "vet-plantoes-v1";
   const PACIENTES_KEY = "vet-pacientes-v1";
+  const AGENDA_KEY = "vet-agenda-v1";
   const LAST_BACKUP_KEY = "vet-last-backup";
   const PIN_KEY = "vet-plantoes-pin";
   const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
@@ -573,10 +620,13 @@
 
   let plantoes = load();
   let pacientes = loadPacientes();
+  let agendaItems = loadAgenda();
   let currentDate = new Date();
+  let currentDateAgenda = new Date();
   let filter = "todos";
   let editingId = null;
   let editingPacId = null;
+  let editingAgendaId = null;
   let activeTab = "plantoes";
 
   function load(){
@@ -596,6 +646,15 @@
   }
   function savePacientes(){
     localStorage.setItem(PACIENTES_KEY, JSON.stringify(pacientes));
+  }
+  function loadAgenda(){
+    try{
+      const raw = localStorage.getItem(AGENDA_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveAgenda(){
+    localStorage.setItem(AGENDA_KEY, JSON.stringify(agendaItems));
   }
   function uid(){
     return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -861,10 +920,13 @@
     const sp = document.getElementById('sheetPaciente');
     const sb = document.getElementById('sheetBackup');
     const sn = document.getElementById('sheetNotif');
+    const sa = document.getElementById('sheetAgenda');
     if(sp) sp.classList.remove('open');
     if(sb) sb.classList.remove('open');
     if(sn) sn.classList.remove('open');
+    if(sa) sa.classList.remove('open');
     editingPacId = null;
+    editingAgendaId = null;
   }
 
   function updateNamesUI(existingNames){
@@ -906,7 +968,9 @@
   document.getElementById('fInformarNomes').addEventListener('change', ()=> updateNamesUI());
 
   document.getElementById('fabAdd').addEventListener('click', ()=>{
-    if(activeTab === "plantoes") openSheet(null); else openSheetPaciente(null);
+    if(activeTab === "plantoes") openSheet(null);
+    else if(activeTab === "pacientes") openSheetPaciente(null);
+    else openSheetAgenda(null);
   });
   document.getElementById('btnCancel').addEventListener('click', closeSheet);
   overlay.addEventListener('click', closeSheet);
@@ -977,18 +1041,24 @@
   });
 
   /* ================= TABS ================= */
+  const TAB_FAB_LABELS = { plantoes: "Adicionar plantão", pacientes: "Adicionar paciente", agenda: "Adicionar compromisso" };
+
   document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       activeTab = btn.dataset.tab;
-      const isPlant = activeTab === "plantoes";
-      document.getElementById('plantoesHeaderBlock').style.display = isPlant ? "block" : "none";
-      document.getElementById('pacientesHeaderBlock').style.display = isPlant ? "none" : "block";
-      document.getElementById('plantoesView').style.display = isPlant ? "block" : "none";
-      document.getElementById('pacientesView').style.display = isPlant ? "none" : "block";
-      document.getElementById('fabAdd').setAttribute('aria-label', isPlant ? 'Adicionar plantão' : 'Adicionar paciente');
-      if(!isPlant) renderPacientes();
+
+      document.getElementById('plantoesHeaderBlock').style.display = activeTab === "plantoes" ? "block" : "none";
+      document.getElementById('pacientesHeaderBlock').style.display = activeTab === "pacientes" ? "block" : "none";
+      document.getElementById('agendaHeaderBlock').style.display = activeTab === "agenda" ? "block" : "none";
+      document.getElementById('plantoesView').style.display = activeTab === "plantoes" ? "block" : "none";
+      document.getElementById('pacientesView').style.display = activeTab === "pacientes" ? "block" : "none";
+      document.getElementById('agendaView').style.display = activeTab === "agenda" ? "block" : "none";
+      document.getElementById('fabAdd').setAttribute('aria-label', TAB_FAB_LABELS[activeTab] || 'Adicionar');
+
+      if(activeTab === "pacientes") renderPacientes();
+      if(activeTab === "agenda") renderAgenda();
     });
   });
 
@@ -1044,6 +1114,142 @@
   }
 
   document.getElementById('searchPacientes').addEventListener('input', renderPacientes);
+
+  /* ================= AGENDA PESSOAL ================= */
+  function renderAgenda(){
+    const y = currentDateAgenda.getFullYear(), m = currentDateAgenda.getMonth();
+    document.getElementById('monthLabelAgenda').textContent = MESES[m] + " de " + y;
+
+    const inMonth = agendaItems.filter(a=>{
+      const d = parseLocalDate(a.data);
+      return d.getFullYear()===y && d.getMonth()===m;
+    });
+    document.getElementById('statAgendaTotal').textContent = inMonth.length;
+
+    const sorted = [...inMonth].sort((a,b)=>{
+      const cmp = a.data.localeCompare(b.data);
+      if(cmp !== 0) return cmp;
+      return (a.hora||'').localeCompare(b.hora||'');
+    });
+
+    const listEl = document.getElementById('listAgenda');
+    listEl.innerHTML = "";
+
+    if(sorted.length === 0){
+      listEl.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4"><rect x="20" y="24" width="60" height="54" rx="8"/><path d="M20 40h60"/><path d="M34 16v16M66 16v16"/><circle cx="34" cy="54" r="3"/><circle cx="50" cy="54" r="3"/><circle cx="66" cy="54" r="3"/><circle cx="34" cy="66" r="3"/><circle cx="50" cy="66" r="3"/></svg>
+        <p>Nenhum compromisso neste mês</p>
+        <div class="sub">Toque no + para adicionar o primeiro</div>
+      </div>`;
+      return;
+    }
+
+    sorted.forEach(a=>{
+      const d = parseLocalDate(a.data);
+      const card = document.createElement('div');
+      card.className = "card";
+      card.innerHTML = `
+        <div class="stripe" style="background:var(--brand);"></div>
+        <div class="card-body">
+          <div class="card-top">
+            <div>
+              <div class="date-badge">${String(d.getDate()).padStart(2,'0')} de ${MESES[d.getMonth()]}</div>
+              <div class="weekday">${DIAS_SEMANA[d.getDay()]}${a.hora ? ' · ' + a.hora : ''}</div>
+            </div>
+          </div>
+          <div class="local">${escapeHtml(a.titulo || "Sem título")}</div>
+          ${a.local ? `<div class="obs">📍 ${escapeHtml(a.local)}</div>` : ""}
+          ${a.obs ? `<div class="obs">${escapeHtml(a.obs)}</div>` : ""}
+          <div class="row-bottom">
+            <div></div>
+            <div class="card-actions">
+              <button class="icon-btn" data-editag="${a.id}" aria-label="Editar compromisso">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>`;
+      listEl.appendChild(card);
+    });
+
+    listEl.querySelectorAll('[data-editag]').forEach(btn=>{
+      btn.addEventListener('click', ()=> openSheetAgenda(btn.dataset.editag));
+    });
+  }
+
+  document.getElementById('prevMonthAgenda').addEventListener('click', ()=>{
+    currentDateAgenda = new Date(currentDateAgenda.getFullYear(), currentDateAgenda.getMonth()-1, 1);
+    renderAgenda();
+  });
+  document.getElementById('nextMonthAgenda').addEventListener('click', ()=>{
+    currentDateAgenda = new Date(currentDateAgenda.getFullYear(), currentDateAgenda.getMonth()+1, 1);
+    renderAgenda();
+  });
+
+  const sheetAgenda = document.getElementById('sheetAgenda');
+
+  function openSheetAgenda(id){
+    editingAgendaId = id || null;
+    const isEdit = !!editingAgendaId;
+    document.getElementById('sheetTitleAgenda').textContent = isEdit ? "Editar compromisso" : "Novo compromisso";
+    document.getElementById('btnDeleteAgenda').style.display = isEdit ? "block" : "none";
+
+    if(isEdit){
+      const item = agendaItems.find(x=>x.id===editingAgendaId);
+      document.getElementById('fAgTitulo').value = item.titulo || "";
+      document.getElementById('fAgData').value = item.data || "";
+      document.getElementById('fAgHora').value = item.hora || "";
+      document.getElementById('fAgLocal').value = item.local || "";
+      document.getElementById('fAgObs').value = item.obs || "";
+    } else {
+      const y = currentDateAgenda.getFullYear(), m = currentDateAgenda.getMonth();
+      const today = new Date();
+      const defaultDate = (today.getFullYear()===y && today.getMonth()===m) ? today : new Date(y,m,1);
+      document.getElementById('fAgTitulo').value = "";
+      document.getElementById('fAgData').value = defaultDate.toISOString().slice(0,10);
+      document.getElementById('fAgHora').value = "";
+      document.getElementById('fAgLocal').value = "";
+      document.getElementById('fAgObs').value = "";
+    }
+    overlay.classList.add('open');
+    sheetAgenda.classList.add('open');
+  }
+
+  document.getElementById('btnCancelAgenda').addEventListener('click', closeSheet);
+
+  document.getElementById('btnSaveAgenda').addEventListener('click', ()=>{
+    const titulo = document.getElementById('fAgTitulo').value.trim();
+    const dataVal = document.getElementById('fAgData').value;
+    const hora = document.getElementById('fAgHora').value;
+    const local = document.getElementById('fAgLocal').value.trim();
+    const obs = document.getElementById('fAgObs').value.trim();
+
+    if(!titulo){ toast("Dê um título para o compromisso"); return; }
+    if(!dataVal){ toast("Informe a data"); return; }
+
+    if(editingAgendaId){
+      const item = agendaItems.find(x=>x.id===editingAgendaId);
+      Object.assign(item, {titulo, data:dataVal, hora, local, obs});
+      toast("Compromisso atualizado");
+    } else {
+      agendaItems.push({id:uid(), titulo, data:dataVal, hora, local, obs, createdAt:Date.now()});
+      toast("Compromisso salvo");
+    }
+    saveAgenda();
+    const savedDate = parseLocalDate(dataVal);
+    currentDateAgenda = new Date(savedDate.getFullYear(), savedDate.getMonth(), 1);
+    closeSheet();
+    renderAgenda();
+  });
+
+  document.getElementById('btnDeleteAgenda').addEventListener('click', ()=>{
+    if(!editingAgendaId) return;
+    agendaItems = agendaItems.filter(x=>x.id!==editingAgendaId);
+    saveAgenda();
+    closeSheet();
+    renderAgenda();
+    toast("Compromisso excluído");
+  });
 
   const sheetPaciente = document.getElementById('sheetPaciente');
   const sheetBackup = document.getElementById('sheetBackup');
@@ -1332,7 +1538,8 @@
       app: "plantoes-vet-lais-santos",
       exportedAt: new Date().toISOString(),
       plantoes: plantoes,
-      pacientes: pacientes
+      pacientes: pacientes,
+      agendaItems: agendaItems
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
     const url = URL.createObjectURL(blob);
@@ -1366,14 +1573,14 @@
         toast("Arquivo inválido");
         return;
       }
-      if(!data || (!Array.isArray(data.plantoes) && !Array.isArray(data.pacientes))){
+      if(!data || (!Array.isArray(data.plantoes) && !Array.isArray(data.pacientes) && !Array.isArray(data.agendaItems))){
         toast("Arquivo de backup não reconhecido");
         return;
       }
       const okConfirm = confirm("Importar este backup? Os itens serão mesclados com os dados que já existem neste aparelho (nada é apagado).");
       if(!okConfirm) return;
 
-      let addedP=0, updP=0, addedPac=0, updPac=0;
+      let addedP=0, updP=0, addedPac=0, updPac=0, addedAg=0, updAg=0;
       (data.plantoes||[]).forEach(item=>{
         if(!item || !item.id) return;
         const idx = plantoes.findIndex(x=>x.id===item.id);
@@ -1385,12 +1592,19 @@
         const idx = pacientes.findIndex(x=>x.id===item.id);
         if(idx>=0){ pacientes[idx] = item; updPac++; } else { pacientes.push(item); addedPac++; }
       });
+      (data.agendaItems||[]).forEach(item=>{
+        if(!item || !item.id) return;
+        const idx = agendaItems.findIndex(x=>x.id===item.id);
+        if(idx>=0){ agendaItems[idx] = item; updAg++; } else { agendaItems.push(item); addedAg++; }
+      });
       save();
       savePacientes();
+      saveAgenda();
       render();
       renderPacientes();
+      renderAgenda();
       refreshPatientsDatalist();
-      toast(`Importado: ${addedP+addedPac} novo(s), ${updP+updPac} atualizado(s)`);
+      toast(`Importado: ${addedP+addedPac+addedAg} novo(s), ${updP+updPac+updAg} atualizado(s)`);
     };
     reader.readAsText(file);
   });
