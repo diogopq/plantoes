@@ -5,4 +5,4 @@
 // "Gravar relato por áudio" (o campo de relato continua podendo ser digitado).
 //
 // Exemplo: window.TRANSCRICAO_URL = "https://plantoes-transcricao.seunome.workers.dev";
-window.TRANSCRICAO_URL = "";
+window.TRANSCRICAO_URL = "https://plantoes-transcricao.diogopq.workers.dev";
