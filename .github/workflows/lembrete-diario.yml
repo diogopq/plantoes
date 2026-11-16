@@ -2,8 +2,11 @@ name: Lembrete diário de plantões
 
 on:
   schedule:
-    # 11:00 UTC = 08:00 no horário de Brasília (sem horário de verão desde 2019)
-    - cron: "0 11 * * *"
+    # 08:07 UTC = 05:07 em Brasília. O GitHub costuma atrasar execuções
+    # agendadas em várias horas, então disparamos bem cedo e o passo
+    # "Aguardar horário" segura o envio até HORARIO_ENVIO (abaixo).
+    # Minuto "quebrado" porque a hora cheia é quando o GitHub mais atrasa.
+    - cron: "7 8 * * *"
   workflow_dispatch: {}
     # Permite rodar manualmente pela aba "Actions" do GitHub, útil para testar.
 
@@ -15,6 +18,22 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@v6
+
+      # Se o GitHub rodar antes do horário desejado, espera até lá.
+      # Se rodar depois (atraso), envia na hora. Execução manual não espera.
+      - name: Aguardar horário
+        if: github.event_name == 'schedule'
+        env:
+          HORARIO_ENVIO: "07:00" # horário de Brasília
+        run: |
+          alvo=$(TZ=America/Sao_Paulo date -d "today $HORARIO_ENVIO" +%s)
+          agora=$(date +%s)
+          if [ "$agora" -lt "$alvo" ]; then
+            echo "Aguardando $(( (alvo - agora) / 60 )) min até $HORARIO_ENVIO (Brasília)..."
+            sleep $(( alvo - agora ))
+          else
+            echo "Já passou de $HORARIO_ENVIO, enviando agora."
+          fi
 
       - name: Instalar firebase-admin
         run: npm install firebase-admin@12
