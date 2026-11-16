@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
 <title>Plantões · Dra. Laís Santos</title>
-<meta name="theme-color" content="#1F4A3D">
+<meta name="theme-color" content="#1F4A3D" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#163A2F" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
@@ -31,7 +32,48 @@
     --paid:#2F6B52;
     --paid-bg:#E4EFE8;
     --danger:#AD4A3A;
+    --danger-bg:#F7E7E3;
     --shadow: 0 1px 2px rgba(23,40,31,0.06), 0 8px 24px -12px rgba(23,40,31,0.18);
+    /* tokens extras (permitem o modo escuro) */
+    --brand-ink:#1F4A3D;      /* verde usado como cor de TEXTO */
+    --ink-faint:#7D8F84;      /* ícones e textos bem secundários */
+    --header-bg:#1F4A3D;
+    --on-header:#EEF2EE;
+    --on-header-soft:#C9DBD1;
+    --pill-bg:#F7FAF8;        /* aba ativa e cartão do logo */
+    --track:#D7DFD9;
+    --toast-bg:#17281F;
+    --toast-fg:#FFFFFF;
+    --today:#1F4A3D;
+    color-scheme: light;
+  }
+  /* ---------- MODO ESCURO (segue o tema do celular) ---------- */
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0E1713;
+      --paper:#18231E;
+      --ink:#E3ECE6;
+      --ink-soft:#A3B5AA;
+      --ink-faint:#7F9287;
+      --line:#2A3A32;
+      --brand:#2A6150;
+      --brand-2:#347460;
+      --brand-ink:#8FD1B4;
+      --amber:#E2A35C;
+      --amber-bg:#33261A;
+      --paid:#74C49C;
+      --paid-bg:#1A3027;
+      --danger:#E58A78;
+      --danger-bg:#3A201B;
+      --header-bg:#163A2F;
+      --pill-bg:#E9F1EC;
+      --track:#3A4A42;
+      --toast-bg:#E3ECE6;
+      --toast-fg:#0E1713;
+      --today:#8FD1B4;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -12px rgba(0,0,0,0.6);
+      color-scheme: dark;
+    }
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -62,7 +104,7 @@
     text-align:center;
   }
   .login-logo{max-width:210px;width:80%;height:auto;margin:0 auto 22px;display:block;}
-  .login-card h2{font-family:'Fraunces',serif;font-size:19px;color:var(--brand);margin:0 0 6px;font-weight:600;}
+  .login-card h2{font-family:'Fraunces',serif;font-size:19px;color:var(--brand-ink);margin:0 0 6px;font-weight:600;}
   .login-card .sub{font-size:13px;color:var(--ink-soft);margin:0 0 22px;line-height:1.4;}
   .pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:20px;}
   .pin-dots .dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--line);background:var(--paper);transition:all .12s ease;}
@@ -90,8 +132,8 @@
 
   /* Header */
   header{
-    background:var(--brand);
-    color:#EEF2EE;
+    background:var(--header-bg);
+    color:var(--on-header);
     padding:max(22px, env(safe-area-inset-top)) 0 26px;
     border-radius:0 0 28px 28px;
     position:relative;
@@ -107,7 +149,7 @@
   .brand-row, .header-actions{ position:relative; z-index:1; }
   .brand-row{display:flex;align-items:center;justify-content:space-between;padding-top:6px;gap:10px;}
   .brand-card{
-    background:#F7FAF8;
+    background:var(--pill-bg);
     border-radius:14px;
     padding:10px 16px;
     display:inline-flex;
@@ -115,18 +157,23 @@
   }
   .brand-card img{display:block;height:30px;width:auto;}
   .lock-btn{
-    background:rgba(255,255,255,0.12); border:none; color:#EEF2EE;
-    width:34px;height:34px;border-radius:50%;flex:none;
-    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    background:none; border:none; color:var(--on-header); padding:0; width:48px; flex:none;
+    display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-family:inherit;
   }
-  .lock-btn:active{background:rgba(255,255,255,0.24);}
-  .tagline{font-size:12.5px;color:#C9DBD1;margin-top:10px;}
-  .header-actions{display:flex;gap:8px;flex:none;}
+  .lock-btn .hb-ico{
+    width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.12);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .lock-btn:active .hb-ico{background:rgba(255,255,255,0.24);}
+  .lock-btn .hb-lbl{font-size:10.5px;font-weight:600;color:var(--on-header-soft);line-height:1;}
+  .tagline{font-size:12.5px;color:var(--on-header-soft);margin-top:10px;}
+  .header-actions{display:flex;gap:4px;flex:none;}
   .tabs{display:flex;gap:4px;margin-top:16px;background:rgba(255,255,255,0.08);border-radius:12px;padding:4px;}
-  .tab-btn{flex:1;border:none;background:none;color:#C9DBD1;padding:9px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
-  .tab-btn.active{background:#F7FAF8;color:var(--brand);}
-  .patients-summary{margin-top:16px;font-size:13px;color:#C9DBD1;}
+  .tab-btn{flex:1;border:none;background:none;color:var(--on-header-soft);padding:11px 9px;border-radius:9px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .tab-btn.active{background:var(--pill-bg);color:#1F4A3D;}
+  .patients-summary{margin-top:16px;font-size:13px;color:var(--on-header-soft);}
   .patients-summary strong{color:#fff;font-family:'JetBrains Mono',monospace;font-size:15px;}
+  #pacientesView .search-box{margin-top:18px;}
   .search-box input{
     width:100%; border:1.5px solid var(--line); background:var(--paper);
     border-radius:12px; padding:11px 14px; font-size:14px; font-family:inherit; color:var(--ink);
@@ -136,13 +183,14 @@
   .month-nav{display:flex;align-items:center;justify-content:space-between;margin-top:18px;}
   .month-nav button{
     background:rgba(255,255,255,0.12);
-    border:none;color:#EEF2EE;width:34px;height:34px;border-radius:50%;
-    font-size:16px; cursor:pointer; display:flex;align-items:center;justify-content:center;
+    border:none;color:var(--on-header);width:40px;height:40px;border-radius:50%;
+    font-size:18px; cursor:pointer; display:flex;align-items:center;justify-content:center;
   }
   .month-nav button:active{background:rgba(255,255,255,0.24);}
   .month-label{
-    font-family:'Fraunces',serif; font-size:18px; font-weight:600; text-transform:capitalize;
+    font-family:'Fraunces',serif; font-size:18px; font-weight:600;
   }
+  .month-label::first-letter{text-transform:uppercase;}
 
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px;}
   .stat{
@@ -153,7 +201,7 @@
     text-align:center;
   }
   .stat .num{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14.5px;display:block;}
-  .stat .lbl{font-size:10px;color:#C9DBD1;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;display:block;}
+  .stat .lbl{font-size:10.5px;color:var(--on-header-soft);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;display:block;}
   .stat.pend .num{color:#F0C089;}
   .stat.paid .num{color:#A9E0C4;}
 
@@ -185,57 +233,48 @@
   .card-body{flex:1;min-width:0;padding-left:2px;}
   .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
   .date-badge{
-    font-family:'Fraunces',serif;font-weight:600;font-size:15px;color:var(--brand);
+    font-family:'Fraunces',serif;font-weight:600;font-size:15px;color:var(--brand-ink);
   }
-  .weekday{font-size:11px;color:var(--ink-soft);font-weight:500;}
-  .local{font-size:14px;color:var(--ink);margin-top:5px;font-weight:600;}
-  .obs{font-size:12.5px;color:var(--ink-soft);margin-top:3px;}
+  .weekday{font-size:12.5px;color:var(--ink-soft);font-weight:500;}
+  .local{font-size:15px;color:var(--ink);margin-top:6px;font-weight:600;}
+  .obs{font-size:13.5px;color:var(--ink-soft);margin-top:4px;line-height:1.4;}
   .valor{
     font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--ink);
     white-space:nowrap;
   }
   .row-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:10px;}
 
-  .status-toggle{
-    display:flex;align-items:center;gap:6px;
-    border:1px dashed var(--amber);color:var(--amber);
-    background:var(--amber-bg);
-    font-size:11.5px;font-weight:700;
-    padding:5px 10px;border-radius:99px;cursor:pointer;
-    text-transform:uppercase; letter-spacing:0.03em;
+  .status-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;}
+  .status-pill{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:12px;font-weight:700;padding:5px 10px;border-radius:99px;white-space:nowrap;
   }
-  .card.is-paid .status-toggle{
-    border:1px solid var(--paid); color:var(--paid); background:var(--paid-bg);
+  .status-pill.pend{color:var(--amber);background:var(--amber-bg);}
+  .status-pill.paid{color:var(--paid);background:var(--paid-bg);}
+  .mark-paid{
+    border:1.5px solid var(--paid);color:var(--paid);background:none;font-family:inherit;
+    font-size:12.5px;font-weight:700;padding:8px 12px;border-radius:99px;cursor:pointer;white-space:nowrap;
   }
+  .mark-paid:active{background:var(--paid-bg);}
+  .card.tappable, .pat-card.tappable{cursor:pointer;}
+  .card.tappable:active, .pat-card.tappable:active{transform:scale(0.99);}
+  .card.flash{animation:cardFlash 1.4s ease;}
+  @keyframes cardFlash{0%,60%{box-shadow:0 0 0 3px var(--brand-ink), var(--shadow);}100%{box-shadow:var(--shadow);}}
 
-  .stamp{
-    font-family:'Fraunces',serif;
-    font-weight:700; font-size:10.5px; letter-spacing:0.06em;
-    color:var(--paid);
-    border:2px solid var(--paid);
-    border-radius:5px;
-    padding:2px 7px;
-    transform:rotate(-8deg);
-    display:inline-block;
-    position:relative;
-  }
-  .stamp::before{
-    content:"";position:absolute;inset:-3px;border:1px solid var(--paid);border-radius:7px;opacity:0.5;
-  }
 
   .card-actions{display:flex;gap:4px;}
   .icon-btn{
-    background:none;border:none;color:#B7C3BB;padding:5px;cursor:pointer;border-radius:8px;
-    display:flex;align-items:center;justify-content:center;
+    background:none;border:none;color:var(--ink-faint);width:42px;height:42px;margin:-8px -6px -8px 0;cursor:pointer;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;flex:none;
   }
-  .icon-btn:active{background:#F0F3F0;}
+  .icon-btn:active{background:var(--bg);}
 
   .empty{
     text-align:center; padding:60px 20px; color:var(--ink-soft);
   }
-  .empty svg{width:56px;height:56px;color:#C6D3CB;margin-bottom:14px;}
+  .empty svg{width:56px;height:56px;color:var(--line);margin-bottom:14px;}
   .empty p{font-size:14px;margin:0;}
-  .empty .sub{font-size:12.5px;color:#9AAAA0;margin-top:4px;}
+  .empty .sub{font-size:12.5px;color:var(--ink-faint);margin-top:4px;}
 
   /* FAB */
   .pat-card{
@@ -244,8 +283,8 @@
   }
   .pat-info{min-width:0;}
   .pat-info .pat-name{font-family:'Fraunces',serif;font-weight:600;font-size:15.5px;color:var(--ink);}
-  .pat-info .pat-meta{font-size:12.5px;color:var(--ink-soft);margin-top:3px;}
-  .pat-info .pat-obs{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+  .pat-info .pat-meta{font-size:13.5px;color:var(--ink-soft);margin-top:3px;}
+  .pat-info .pat-obs{font-size:13px;color:var(--ink-soft);margin-top:4px;}
   .backup-sheet-text{font-size:13px;color:var(--ink-soft);line-height:1.55;margin:0 0 18px;}
   .backup-row{display:flex;flex-direction:column;gap:10px;}
   .last-backup{font-size:12px;color:var(--ink-soft);margin-top:16px;text-align:center;}
@@ -275,7 +314,7 @@
   }
   .sheet.open{transform:translateY(0);}
   .sheet-handle{width:38px;height:4px;background:var(--line);border-radius:99px;margin:6px auto 14px;}
-  .sheet h2{font-family:'Fraunces',serif;font-size:19px;margin:0 0 16px;color:var(--brand);}
+  .sheet h2{font-family:'Fraunces',serif;font-size:19px;margin:0 0 16px;color:var(--brand-ink);}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;}
   .field input, .field textarea, .field select{
@@ -297,7 +336,7 @@
   .switch{position:relative;width:46px;height:27px;flex:none;}
   .switch input{opacity:0;width:0;height:0;}
   .switch .track{
-    position:absolute;inset:0;background:#D7DFD9;border-radius:99px;transition:background .18s ease;cursor:pointer;
+    position:absolute;inset:0;background:var(--track);border-radius:99px;transition:background .18s ease;cursor:pointer;
   }
   .switch .track::before{
     content:"";position:absolute;width:21px;height:21px;left:3px;top:3px;background:#fff;border-radius:50%;
@@ -308,7 +347,7 @@
 
   .check-row{display:flex;align-items:center;gap:10px;padding:2px 2px;}
   .check-row input[type=checkbox]{width:19px;height:19px;accent-color:var(--brand);flex:none;}
-  .check-row label{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.3;}
+  .field .check-row label, .check-row label{font-size:14px;font-weight:600;color:var(--ink);line-height:1.3;text-transform:none;letter-spacing:0;margin:0;display:inline;}
   .names-box{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
   .names-box input{
     width:100%; border:1.5px solid var(--line); background:var(--paper);
@@ -326,14 +365,14 @@
   .btn-primary{background:var(--brand); color:#fff;}
   .btn-primary:active{background:var(--brand-2);}
   .btn-ghost{background:var(--paper); color:var(--ink-soft); border:1.5px solid var(--line);}
-  .btn-delete{background:#F7E7E3;color:var(--danger); border:none; margin-top:10px; width:100%; border-radius:12px; padding:12px; font-weight:700; font-size:13.5px; cursor:pointer;}
+  .btn-delete{background:var(--danger-bg);color:var(--danger); border:none; margin-top:10px; width:100%; border-radius:12px; padding:12px; font-weight:700; font-size:13.5px; cursor:pointer;}
 
   /* ---------- RELATO POR ÁUDIO ---------- */
   .rec-box{margin-bottom:8px;}
   .rec-box:empty{display:none;}
   .rec-btn{
     width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
-    background:var(--paper); color:var(--brand); border:1.5px dashed var(--brand-2);
+    background:var(--paper); color:var(--brand-ink); border:1.5px dashed var(--brand-ink);
     border-radius:12px; padding:13px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer;
   }
   .rec-btn:active{background:var(--paid-bg);}
@@ -354,17 +393,66 @@
   .rec-actions button.danger{color:var(--danger);}
   .rec-msg{font-size:13px;color:var(--ink);margin-bottom:10px;line-height:1.4;display:flex;align-items:center;gap:10px;}
   .rec-msg.erro{color:var(--danger);}
-  .rec-spin{width:16px;height:16px;border:2.5px solid var(--line);border-top-color:var(--brand);border-radius:50%;flex:none;animation:recSpin .8s linear infinite;}
+  .rec-spin{width:16px;height:16px;border:2.5px solid var(--line);border-top-color:var(--brand-ink);border-radius:50%;flex:none;animation:recSpin .8s linear infinite;}
   @keyframes recSpin{to{transform:rotate(360deg)}}
   #fRelato{min-height:96px;line-height:1.45;}
   .obs.relato{white-space:pre-line;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 
+  /* ---------- CALENDÁRIO DO MÊS ---------- */
+  .cal{background:var(--paper);border-radius:16px;box-shadow:var(--shadow);padding:10px 10px 8px;margin-top:16px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+  .cal-wd{font-size:11px;font-weight:700;color:var(--ink-faint);text-align:center;padding:2px 0 6px;}
+  .cal-day{
+    position:relative;height:42px;border:none;background:none;border-radius:10px;cursor:pointer;
+    font-family:inherit;font-size:13.5px;font-weight:600;color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:6px;gap:4px;
+  }
+  .cal-day:active{background:var(--bg);}
+  .cal-day.out{visibility:hidden;}
+  .cal-day.has{background:var(--bg);}
+  .cal-day.today .cal-num{box-shadow:0 0 0 1.5px var(--today);border-radius:99px;padding:0 6px;}
+  .cal-dots{display:flex;gap:3px;height:6px;}
+  .cal-dot{width:6px;height:6px;border-radius:50%;}
+  .cal-dot.paid{background:var(--paid);}
+  .cal-dot.pend{background:var(--amber);}
+  .cal-dot.ag{background:none;box-shadow:inset 0 0 0 1.5px var(--brand-ink);}
+  .cal-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;padding:0 4px;}
+  .cal-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--ink-soft);}
+  .cal-legend span{display:inline-flex;align-items:center;gap:4px;}
+  .cal-toggle{
+    background:none;border:none;color:var(--brand-ink);font-family:inherit;font-size:12.5px;font-weight:700;
+    padding:8px 4px;cursor:pointer;white-space:nowrap;
+  }
+  .cal-collapsed .cal-grid{display:none;}
+  .cal-collapsed .cal-legend{visibility:hidden;}
+
+  /* ---------- SEÇÕES DO FORMULÁRIO + BOTÕES FIXOS ---------- */
+  .form-section{
+    font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--brand-ink);
+    margin:22px 0 12px;display:flex;align-items:center;gap:10px;
+  }
+  .form-section::after{content:"";flex:1;height:1px;background:var(--line);}
+  .sheet h2 + .form-section{margin-top:4px;}
+  .sheet .sheet-actions{
+    position:sticky; bottom:0; z-index:2;
+    background:var(--bg);
+    margin:18px -20px 0;
+    padding:12px 20px 12px;
+    box-shadow:0 -10px 16px -14px rgba(0,0,0,0.35);
+  }
+  .sheet .btn-delete{margin-top:18px;}
+
   .toast{
     position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px);
-    background:var(--ink); color:#fff; padding:11px 18px; border-radius:99px; font-size:13px; font-weight:600;
+    background:var(--toast-bg); color:var(--toast-fg); padding:11px 18px; border-radius:99px; font-size:13.5px; font-weight:600;
     opacity:0; transition:all .25s ease; pointer-events:none; z-index:60; white-space:nowrap;
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .toast.has-action{pointer-events:auto;display:flex;align-items:center;gap:14px;padding:8px 8px 8px 18px;}
+  .toast-action{
+    background:none;border:none;color:inherit;font-family:inherit;font-size:13.5px;font-weight:800;
+    text-decoration:underline;padding:6px 10px;border-radius:99px;cursor:pointer;
+  }
 </style>
 </head>
 <body>
@@ -400,13 +488,13 @@
       </div>
       <div class="header-actions">
         <button class="lock-btn" id="notifBtn" aria-label="Notificações" title="Notificações">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span class="hb-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span><span class="hb-lbl">Avisos</span>
         </button>
         <button class="lock-btn" id="backupBtn" aria-label="Backup" title="Backup dos dados">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span class="hb-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span><span class="hb-lbl">Backup</span>
         </button>
         <button class="lock-btn" id="lockBtn" aria-label="Bloquear app" title="Bloquear">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+          <span class="hb-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span><span class="hb-lbl">Bloquear</span>
         </button>
       </div>
     </div>
@@ -433,7 +521,7 @@
     </div>
 
     <div id="pacientesHeaderBlock" style="display:none;">
-      <div class="patients-summary"><strong id="statPacientesTotal">0</strong> paciente(s) cadastrado(s)</div>
+      <div class="patients-summary"><strong id="statPacientesTotal">0</strong> <span id="lblPacientesTotal">pacientes cadastrados</span></div>
     </div>
 
     <div id="agendaHeaderBlock" style="display:none;">
@@ -442,13 +530,24 @@
         <div class="month-label" id="monthLabelAgenda">—</div>
         <button id="nextMonthAgenda" aria-label="Próximo mês">›</button>
       </div>
-      <div class="patients-summary"><strong id="statAgendaTotal">0</strong> compromisso(s) este mês</div>
+      <div class="patients-summary"><strong id="statAgendaTotal">0</strong> <span id="lblAgendaTotal">compromissos este mês</span></div>
     </div>
   </div>
 </header>
 
 <div class="wrap">
   <div id="plantoesView">
+    <div class="cal" id="calBox">
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-foot">
+        <div class="cal-legend">
+          <span><i class="cal-dot paid"></i>pago</span>
+          <span><i class="cal-dot pend"></i>a receber</span>
+          <span><i class="cal-dot ag"></i>agenda</span>
+        </div>
+        <button type="button" class="cal-toggle" id="calToggle">Ocultar calendário</button>
+      </div>
+    </div>
     <div class="filters">
       <div class="chip active" data-filter="todos">Todos</div>
       <div class="chip" data-filter="pendente">Pendentes</div>
@@ -478,6 +577,7 @@
   <div class="sheet-handle"></div>
   <h2 id="sheetTitle">Novo plantão</h2>
 
+  <div class="form-section">Dados do plantão</div>
   <div class="field">
     <label for="fData">Data</label>
     <input type="date" id="fData">
@@ -494,26 +594,6 @@
     </div>
   </div>
   <div class="field">
-    <label for="fNumPacientes">Número de pacientes <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
-    <input type="text" id="fNumPacientes" inputmode="numeric" pattern="[0-9]*" placeholder="Ex: 3" autocomplete="off">
-  </div>
-  <div class="field" id="namesToggleField" style="display:none;">
-    <div class="check-row">
-      <input type="checkbox" id="fInformarNomes">
-      <label for="fInformarNomes">Deseja informar os nomes dos pacientes?</label>
-    </div>
-    <div class="names-box" id="namesBox" style="display:none;"></div>
-  </div>
-  <div class="field">
-    <label for="fObs">Observações <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
-    <textarea id="fObs" placeholder="Ex: plantão noturno, troca com colega..."></textarea>
-  </div>
-  <div class="field">
-    <label for="fRelato">Relato do plantão <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
-    <div class="rec-box" id="recBox"></div>
-    <textarea id="fRelato" placeholder="Escreva ou grave por áudio o que aconteceu no plantão..."></textarea>
-  </div>
-  <div class="field">
     <div class="toggle-row">
       <div>
         <div class="lbl-text">Já recebi este pagamento</div>
@@ -526,11 +606,35 @@
     </div>
   </div>
 
+  <div class="form-section">Pacientes</div>
+  <div class="field">
+    <label for="fNumPacientes">Número de pacientes <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <input type="text" id="fNumPacientes" inputmode="numeric" pattern="[0-9]*" placeholder="Ex: 3" autocomplete="off">
+  </div>
+  <div class="field" id="namesToggleField" style="display:none;">
+    <div class="check-row">
+      <input type="checkbox" id="fInformarNomes">
+      <label for="fInformarNomes">Deseja informar os nomes dos pacientes?</label>
+    </div>
+    <div class="names-box" id="namesBox" style="display:none;"></div>
+  </div>
+
+  <div class="form-section">Anotações</div>
+  <div class="field">
+    <label for="fObs">Observações <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <textarea id="fObs" placeholder="Ex: plantão noturno, troca com colega..."></textarea>
+  </div>
+  <div class="field">
+    <label for="fRelato">Relato do plantão <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <div class="rec-box" id="recBox"></div>
+    <textarea id="fRelato" placeholder="Escreva ou grave por áudio o que aconteceu no plantão..."></textarea>
+  </div>
+
+  <button class="btn-delete" id="btnDelete" style="display:none;">Excluir plantão</button>
   <div class="sheet-actions">
     <button class="btn btn-ghost" id="btnCancel">Cancelar</button>
     <button class="btn btn-primary" id="btnSave">Salvar</button>
   </div>
-  <button class="btn-delete" id="btnDelete" style="display:none;">Excluir plantão</button>
 </div>
 
 <div class="sheet" id="sheetPaciente">
@@ -564,11 +668,11 @@
     <textarea id="fPacObs" placeholder="Ex: alergias, condições, temperamento..."></textarea>
   </div>
 
+  <button class="btn-delete" id="btnDeletePac" style="display:none;">Excluir paciente</button>
   <div class="sheet-actions">
     <button class="btn btn-ghost" id="btnCancelPac">Cancelar</button>
     <button class="btn btn-primary" id="btnSavePac">Salvar</button>
   </div>
-  <button class="btn-delete" id="btnDeletePac" style="display:none;">Excluir paciente</button>
 </div>
 
 <div class="sheet" id="sheetAgenda">
@@ -596,11 +700,11 @@
     <textarea id="fAgObs" placeholder="Detalhes, o que levar, com quem é..."></textarea>
   </div>
 
+  <button class="btn-delete" id="btnDeleteAgenda" style="display:none;">Excluir compromisso</button>
   <div class="sheet-actions">
     <button class="btn btn-ghost" id="btnCancelAgenda">Cancelar</button>
     <button class="btn btn-primary" id="btnSaveAgenda">Salvar</button>
   </div>
-  <button class="btn-delete" id="btnDeleteAgenda" style="display:none;">Excluir compromisso</button>
 </div>
 
 <div class="sheet" id="sheetBackup">
@@ -705,11 +809,33 @@
   }
   function toast(msg){
     const t = document.getElementById('toast');
+    t.classList.remove('has-action');
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(toast._h);
     toast._h = setTimeout(()=>t.classList.remove('show'), 1800);
   }
+  // Aviso com botão "Desfazer" (fica 6 s na tela).
+  function toastUndo(msg, onUndo){
+    const t = document.getElementById('toast');
+    t.innerHTML = "";
+    const span = document.createElement('span');
+    span.textContent = msg;
+    const btn = document.createElement('button');
+    btn.className = "toast-action";
+    btn.type = "button";
+    btn.textContent = "Desfazer";
+    btn.addEventListener('click', ()=>{
+      clearTimeout(toast._h);
+      t.classList.remove('show','has-action');
+      onUndo();
+    }, { once:true });
+    t.append(span, btn);
+    t.classList.add('show','has-action');
+    clearTimeout(toast._h);
+    toast._h = setTimeout(()=>t.classList.remove('show','has-action'), 6000);
+  }
+  function plural(n, um, varios){ return n === 1 ? um : varios; }
   function escapeHtml(str){
     const d = document.createElement('div');
     d.textContent = str;
@@ -853,6 +979,7 @@
     document.getElementById('statTotal').textContent = fmtMoney(totalAll);
     document.getElementById('statPaid').textContent = fmtMoney(totalPaid);
     document.getElementById('statPend').textContent = fmtMoney(totalPend);
+    renderCalendario(y, m);
 
     let filtered = inMonth;
     if(filter==="pendente") filtered = inMonth.filter(p=>!p.recebido);
@@ -875,7 +1002,9 @@
     filtered.forEach(p=>{
       const d = parseLocalDate(p.data);
       const card = document.createElement('div');
-      card.className = "card" + (p.recebido ? " is-paid" : "");
+      card.className = "card tappable" + (p.recebido ? " is-paid" : "");
+      card.dataset.id = p.id;
+      card.dataset.data = p.data;
       card.innerHTML = `
         <div class="stripe"></div>
         <div class="card-body">
@@ -891,9 +1020,11 @@
           ${p.obs ? `<div class="obs">${escapeHtml(p.obs)}</div>` : ""}
           ${p.relato ? `<div class="obs relato">📝 ${escapeHtml(p.relato)}</div>` : ""}
           <div class="row-bottom">
-            ${p.recebido
-              ? `<div class="stamp">✓ pago</div>`
-              : `<button class="status-toggle" data-toggle="${p.id}">○ aguardando</button>`}
+            <div class="status-row">
+              ${p.recebido
+                ? `<span class="status-pill paid">✓ Pago</span>`
+                : `<span class="status-pill pend">A receber</span><button class="mark-paid" data-toggle="${p.id}">Marcar como recebido</button>`}
+            </div>
             <div class="card-actions">
               <button class="icon-btn" data-edit="${p.id}" aria-label="Editar">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
@@ -905,21 +1036,85 @@
     });
 
     list.querySelectorAll('[data-toggle]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
         const item = plantoes.find(x=>x.id===btn.dataset.toggle);
-        if(item){ item.recebido = true; save(); render(); toast("Marcado como recebido"); }
+        if(!item) return;
+        item.recebido = true; save(); render();
+        toastUndo("Marcado como recebido", ()=>{ item.recebido = false; save(); render(); });
       });
     });
-    list.querySelectorAll('[data-edit]').forEach(btn=>{
-      btn.addEventListener('click', ()=> openSheet(btn.dataset.edit));
+    list.querySelectorAll('.card.tappable').forEach(card=>{
+      card.addEventListener('click', ()=> openSheet(card.dataset.id));
     });
   }
+
+  /* ================= CALENDÁRIO DO MÊS ================= */
+  function calOculto(){ try{ return localStorage.getItem("vet-cal-oculto") === "1"; }catch(_){ return false; } }
+  function aplicarCalOculto(){
+    const oculto = calOculto();
+    document.getElementById('calBox').classList.toggle('cal-collapsed', oculto);
+    document.getElementById('calToggle').textContent = oculto ? "Mostrar calendário" : "Ocultar calendário";
+  }
+  document.getElementById('calToggle').addEventListener('click', ()=>{
+    try{ localStorage.setItem("vet-cal-oculto", calOculto() ? "0" : "1"); }catch(_){}
+    aplicarCalOculto();
+  });
+  function isoDia(y, m, d){ return y + "-" + String(m+1).padStart(2,"0") + "-" + String(d).padStart(2,"0"); }
+  function renderCalendario(y, m){
+    aplicarCalOculto();
+    const grid = document.getElementById('calGrid');
+    const porDia = {};
+    plantoes.forEach(p=>{ (porDia[p.data] = porDia[p.data] || {p:[], a:0}).p.push(p); });
+    agendaItems.forEach(a=>{ (porDia[a.data] = porDia[a.data] || {p:[], a:0}).a++; });
+    const hoje = new Date();
+    const hojeIso = isoDia(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    const inicio = new Date(y, m, 1).getDay();
+    const dias = new Date(y, m+1, 0).getDate();
+    let html = ["D","S","T","Q","Q","S","S"].map(d=>`<div class="cal-wd">${d}</div>`).join("");
+    for(let i=0;i<inicio;i++) html += `<div class="cal-day out"></div>`;
+    for(let d=1; d<=dias; d++){
+      const iso = isoDia(y, m, d);
+      const info = porDia[iso];
+      let dots = "";
+      let rotulo = d + " de " + MESES[m];
+      if(info){
+        info.p.slice(0,3).forEach(p=>{ dots += `<i class="cal-dot ${p.recebido ? "paid" : "pend"}"></i>`; });
+        if(info.a) dots += `<i class="cal-dot ag"></i>`;
+        if(info.p.length) rotulo += ", " + info.p.length + " " + plural(info.p.length, "plantão", "plantões");
+        if(info.a) rotulo += ", " + info.a + " " + plural(info.a, "compromisso", "compromissos");
+      }
+      const cls = "cal-day" + (info && info.p.length ? " has" : "") + (iso === hojeIso ? " today" : "");
+      html += `<button type="button" class="${cls}" data-dia="${iso}" aria-label="${rotulo}"><span class="cal-num">${d}</span><span class="cal-dots">${dots}</span></button>`;
+    }
+    grid.innerHTML = html;
+  }
+  // Tocar num dia: com plantão, rola até ele; sem plantão, abre um novo nesse dia.
+  document.getElementById('calGrid').addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-dia]');
+    if(!btn) return;
+    const iso = btn.dataset.dia;
+    if(plantoes.some(p=>p.data===iso)){
+      if(filter !== "todos"){
+        filter = "todos";
+        document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.filter==="todos"));
+        render();
+      }
+      const card = document.querySelector(`#list .card[data-data="${iso}"]`);
+      if(card){
+        card.scrollIntoView({behavior:"smooth", block:"center"});
+        card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+      }
+    } else {
+      openSheet(null, iso);
+    }
+  });
 
   /* ================= SHEET (FORM) ================= */
   const overlay = document.getElementById('overlay');
   const sheet = document.getElementById('sheet');
 
-  function openSheet(id){
+  function openSheet(id, dataInicial){
     editingId = id || null;
     const isEdit = !!editingId;
     document.getElementById('sheetTitle').textContent = isEdit ? "Editar plantão" : "Novo plantão";
@@ -940,7 +1135,7 @@
       const y = currentDate.getFullYear(), m = currentDate.getMonth();
       const today = new Date();
       const defaultDate = (today.getFullYear()===y && today.getMonth()===m) ? today : new Date(y,m,1);
-      document.getElementById('fData').value = defaultDate.toISOString().slice(0,10);
+      document.getElementById('fData').value = dataInicial || isoDia(defaultDate.getFullYear(), defaultDate.getMonth(), defaultDate.getDate());
       document.getElementById('fLocal').value = "";
       document.getElementById('fValor').value = "";
       document.getElementById('fNumPacientes').value = "";
@@ -1058,13 +1253,21 @@
 
   document.getElementById('btnDelete').addEventListener('click', ()=>{
     if(!editingId) return;
+    if(!relatoPodeSair("Há uma gravação que ainda não foi transcrita. Excluir o plantão e descartar o áudio?")) return;
     const deletedId = editingId;
+    const removido = plantoes.find(x=>x.id===deletedId);
     plantoes = plantoes.filter(x=>x.id!==deletedId);
     save();
     deleteSyncedAgenda(deletedId);
     closeSheet();
     render();
-    toast("Plantão excluído");
+    toastUndo("Plantão excluído", ()=>{
+      plantoes.push(removido);
+      save();
+      syncPlantaoAgenda(removido);
+      render();
+      toast("Plantão restaurado");
+    });
   });
 
   document.getElementById('prevMonth').addEventListener('click', ()=>{
@@ -1348,6 +1551,7 @@
 
   function renderPacientes(){
     document.getElementById('statPacientesTotal').textContent = pacientes.length;
+    document.getElementById('lblPacientesTotal').textContent = plural(pacientes.length, "paciente cadastrado", "pacientes cadastrados");
 
     const term = document.getElementById('searchPacientes').value.trim().toLowerCase();
     let filtered = pacientes;
@@ -1372,7 +1576,8 @@
 
     filtered.forEach(p=>{
       const card = document.createElement('div');
-      card.className = "pat-card";
+      card.className = "pat-card tappable";
+      card.dataset.id = p.id;
       card.innerHTML = `
         <div class="pat-info">
           <div class="pat-name">${escapeHtml(p.nome)}</div>
@@ -1386,8 +1591,8 @@
       listEl.appendChild(card);
     });
 
-    listEl.querySelectorAll('[data-editpac]').forEach(btn=>{
-      btn.addEventListener('click', ()=> openSheetPaciente(btn.dataset.editpac));
+    listEl.querySelectorAll('.pat-card.tappable').forEach(card=>{
+      card.addEventListener('click', ()=> openSheetPaciente(card.dataset.id));
     });
   }
 
@@ -1403,6 +1608,7 @@
       return d.getFullYear()===y && d.getMonth()===m;
     });
     document.getElementById('statAgendaTotal').textContent = inMonth.length;
+    document.getElementById('lblAgendaTotal').textContent = plural(inMonth.length, "compromisso este mês", "compromissos este mês");
 
     const sorted = [...inMonth].sort((a,b)=>{
       const cmp = a.data.localeCompare(b.data);
@@ -1425,9 +1631,10 @@
     sorted.forEach(a=>{
       const d = parseLocalDate(a.data);
       const card = document.createElement('div');
-      card.className = "card";
+      card.className = "card tappable";
+      card.dataset.id = a.id;
       card.innerHTML = `
-        <div class="stripe" style="background:var(--brand);"></div>
+        <div class="stripe" style="background:var(--brand-ink);"></div>
         <div class="card-body">
           <div class="card-top">
             <div>
@@ -1450,8 +1657,8 @@
       listEl.appendChild(card);
     });
 
-    listEl.querySelectorAll('[data-editag]').forEach(btn=>{
-      btn.addEventListener('click', ()=> openSheetAgenda(btn.dataset.editag));
+    listEl.querySelectorAll('.card.tappable').forEach(card=>{
+      card.addEventListener('click', ()=> openSheetAgenda(card.dataset.id));
     });
   }
 
@@ -1518,15 +1725,24 @@
     currentDateAgenda = new Date(savedDate.getFullYear(), savedDate.getMonth(), 1);
     closeSheet();
     renderAgenda();
+    render();
   });
 
   document.getElementById('btnDeleteAgenda').addEventListener('click', ()=>{
     if(!editingAgendaId) return;
+    const removido = agendaItems.find(x=>x.id===editingAgendaId);
     agendaItems = agendaItems.filter(x=>x.id!==editingAgendaId);
     saveAgenda();
     closeSheet();
     renderAgenda();
-    toast("Compromisso excluído");
+    render();
+    toastUndo("Compromisso excluído", ()=>{
+      agendaItems.push(removido);
+      saveAgenda();
+      renderAgenda();
+      render();
+      toast("Compromisso restaurado");
+    });
   });
 
   const sheetPaciente = document.getElementById('sheetPaciente');
@@ -1586,12 +1802,19 @@
 
   document.getElementById('btnDeletePac').addEventListener('click', ()=>{
     if(!editingPacId) return;
+    const removido = pacientes.find(x=>x.id===editingPacId);
     pacientes = pacientes.filter(x=>x.id!==editingPacId);
     savePacientes();
     closeAllSheets();
     renderPacientes();
     refreshPatientsDatalist();
-    toast("Paciente excluído");
+    toastUndo("Paciente excluído", ()=>{
+      pacientes.push(removido);
+      savePacientes();
+      renderPacientes();
+      refreshPatientsDatalist();
+      toast("Paciente restaurado");
+    });
   });
 
   /* ================= BACKUP / RESTAURAÇÃO ================= */
