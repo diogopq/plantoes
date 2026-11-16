@@ -10,6 +10,9 @@ on:
 jobs:
   enviar-lembrete:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v6
 
@@ -20,4 +23,13 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node automation/scripts/send-lembretes.js
+
+      # O GitHub desativa workflows agendados após 60 dias sem commits no
+      # repositório. Reativar pela API a cada execução reinicia essa contagem,
+      # sem precisar criar commits falsos.
+      - name: Manter o lembrete ativo
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/lembrete-diario.yml/enable"
 
