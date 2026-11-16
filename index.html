@@ -16,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
 <script src="notifications-config.js" defer onerror="window.__notifConfigMissing=true"></script>
+<script src="transcricao-config.js" defer></script>
 <style>
   :root{
     --bg:#EEF2EE;
@@ -327,6 +328,37 @@
   .btn-ghost{background:var(--paper); color:var(--ink-soft); border:1.5px solid var(--line);}
   .btn-delete{background:#F7E7E3;color:var(--danger); border:none; margin-top:10px; width:100%; border-radius:12px; padding:12px; font-weight:700; font-size:13.5px; cursor:pointer;}
 
+  /* ---------- RELATO POR ÁUDIO ---------- */
+  .rec-box{margin-bottom:8px;}
+  .rec-box:empty{display:none;}
+  .rec-btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--paper); color:var(--brand); border:1.5px dashed var(--brand-2);
+    border-radius:12px; padding:13px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer;
+  }
+  .rec-btn:active{background:var(--paid-bg);}
+  .rec-hint{font-size:11.5px;color:var(--ink-soft);margin-top:6px;line-height:1.35;}
+  .rec-panel{background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;}
+  .rec-live{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .rec-dot{width:11px;height:11px;border-radius:50%;background:var(--danger);flex:none;animation:recPulse 1.2s ease-in-out infinite;}
+  .rec-dot.paused{background:var(--amber);animation:none;}
+  @keyframes recPulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .rec-time{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;color:var(--ink);}
+  .rec-lbl{font-size:12.5px;color:var(--ink-soft);}
+  .rec-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .rec-actions button{
+    flex:1; min-width:0; border-radius:10px; padding:10px 8px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer;
+    background:var(--bg); color:var(--ink-soft); border:1.5px solid var(--line);
+  }
+  .rec-actions button.primary{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .rec-actions button.danger{color:var(--danger);}
+  .rec-msg{font-size:13px;color:var(--ink);margin-bottom:10px;line-height:1.4;display:flex;align-items:center;gap:10px;}
+  .rec-msg.erro{color:var(--danger);}
+  .rec-spin{width:16px;height:16px;border:2.5px solid var(--line);border-top-color:var(--brand);border-radius:50%;flex:none;animation:recSpin .8s linear infinite;}
+  @keyframes recSpin{to{transform:rotate(360deg)}}
+  #fRelato{min-height:96px;line-height:1.45;}
+  .obs.relato{white-space:pre-line;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+
   .toast{
     position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px);
     background:var(--ink); color:#fff; padding:11px 18px; border-radius:99px; font-size:13px; font-weight:600;
@@ -475,6 +507,11 @@
   <div class="field">
     <label for="fObs">Observações <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
     <textarea id="fObs" placeholder="Ex: plantão noturno, troca com colega..."></textarea>
+  </div>
+  <div class="field">
+    <label for="fRelato">Relato do plantão <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <div class="rec-box" id="recBox"></div>
+    <textarea id="fRelato" placeholder="Escreva ou grave por áudio o que aconteceu no plantão..."></textarea>
   </div>
   <div class="field">
     <div class="toggle-row">
@@ -852,6 +889,7 @@
           <div class="local">${escapeHtml(p.local || "Local não informado")}</div>
           ${(p.numPacientes || p.numPacientes===0) ? `<div class="obs">🐾 ${p.numPacientes} paciente${p.numPacientes===1?'':'s'}${(p.nomesPacientes && p.nomesPacientes.filter(Boolean).length) ? ': ' + p.nomesPacientes.filter(Boolean).map(escapeHtml).join(', ') : ''}</div>` : ""}
           ${p.obs ? `<div class="obs">${escapeHtml(p.obs)}</div>` : ""}
+          ${p.relato ? `<div class="obs relato">📝 ${escapeHtml(p.relato)}</div>` : ""}
           <div class="row-bottom">
             ${p.recebido
               ? `<div class="stamp">✓ pago</div>`
@@ -894,6 +932,7 @@
       document.getElementById('fValor').value = item.valor || "";
       document.getElementById('fNumPacientes').value = (item.numPacientes || item.numPacientes===0) ? item.numPacientes : "";
       document.getElementById('fObs').value = item.obs || "";
+      document.getElementById('fRelato').value = item.relato || "";
       document.getElementById('fRecebido').checked = !!item.recebido;
       document.getElementById('fInformarNomes').checked = !!(item.nomesPacientes && item.nomesPacientes.length);
       updateNamesUI(item.nomesPacientes || []);
@@ -906,14 +945,18 @@
       document.getElementById('fValor').value = "";
       document.getElementById('fNumPacientes').value = "";
       document.getElementById('fObs').value = "";
+      document.getElementById('fRelato').value = "";
       document.getElementById('fRecebido').checked = false;
       document.getElementById('fInformarNomes').checked = false;
       updateNamesUI([]);
     }
+    updateRecUI();
     overlay.classList.add('open');
     sheet.classList.add('open');
+    autoGrowRelato();
   }
   function closeSheet(){
+    if(sheet.classList.contains('open') && !relatoPodeSair("Há uma gravação que ainda não foi transcrita. Fechar e descartar o áudio?")) return;
     overlay.classList.remove('open');
     sheet.classList.remove('open');
     editingId = null;
@@ -987,19 +1030,21 @@
       nomesPacientes = Array.from(document.querySelectorAll('.names-box .pname-input')).map(inp=>inp.value.trim());
     }
     const obs = document.getElementById('fObs').value.trim();
+    const relato = document.getElementById('fRelato').value.trim();
     const recebido = document.getElementById('fRecebido').checked;
 
     if(!dataVal){ toast("Informe a data do plantão"); return; }
     if(!valor || valor<=0){ toast("Informe um valor válido"); return; }
+    if(!relatoPodeSair("Há uma gravação que ainda não foi transcrita. Salvar mesmo assim e descartar o áudio?")) return;
 
     let savedItem;
     if(editingId){
       const item = plantoes.find(x=>x.id===editingId);
-      Object.assign(item, {data:dataVal, local, valor, numPacientes, nomesPacientes, obs, recebido});
+      Object.assign(item, {data:dataVal, local, valor, numPacientes, nomesPacientes, obs, relato, recebido});
       savedItem = item;
       toast("Plantão atualizado");
     } else {
-      savedItem = {id:uid(), data:dataVal, local, valor, numPacientes, nomesPacientes, obs, recebido, createdAt:Date.now()};
+      savedItem = {id:uid(), data:dataVal, local, valor, numPacientes, nomesPacientes, obs, relato, recebido, createdAt:Date.now()};
       plantoes.push(savedItem);
       toast("Plantão salvo");
     }
@@ -1038,6 +1083,239 @@
       filter = chip.dataset.filter;
       render();
     });
+  });
+
+  /* ================= RELATO POR ÁUDIO (gravação + transcrição) =================
+     Grava com MediaRecorder, envia para o servidor de transcrição (Cloudflare
+     Worker → Groq Whisper, ver TRANSCRICAO.md) e coloca o texto no campo
+     "Relato do plantão". O áudio nunca é salvo: só o texto, junto do plantão. */
+  const REC_MAX_MS = 60 * 60 * 1000;          // corta automaticamente em 60 min
+  const REC_MAX_BYTES = 24 * 1024 * 1024;     // limite do plano gratuito da Groq é 25 MB
+  // state: idle | recording | paused | transcribing | failed
+  const rec = { state:"idle", mr:null, stream:null, chunks:[], mime:"", startedAt:0, elapsed:0,
+                timer:null, wakeLock:null, discard:false, pending:null, erro:"" };
+
+  function transcricaoConfigurada(){
+    return typeof window.TRANSCRICAO_URL === "string" && /^https:\/\//.test(window.TRANSCRICAO_URL.trim());
+  }
+  function gravacaoSuportada(){
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  }
+  function escolherMime(){
+    const opts = ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4", "audio/webm"];
+    for(const t of opts){
+      try{ if(MediaRecorder.isTypeSupported(t)) return t; }catch(_){}
+    }
+    return "";
+  }
+  function extDoMime(m){
+    if(/mp4|aac|m4a/.test(m)) return "mp4";
+    if(/ogg/.test(m)) return "ogg";
+    return "webm";
+  }
+  function fmtTempo(ms){
+    const s = Math.floor(ms / 1000);
+    return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+  }
+  function tempoGravado(){
+    return rec.elapsed + (rec.state === "recording" ? Date.now() - rec.startedAt : 0);
+  }
+  function autoGrowRelato(){
+    const ta = document.getElementById('fRelato');
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight + 2, Math.round(window.innerHeight * 0.5)) + "px";
+  }
+  document.getElementById('fRelato').addEventListener('input', autoGrowRelato);
+
+  function updateRecUI(){
+    const box = document.getElementById('recBox');
+    if(!transcricaoConfigurada() || !gravacaoSuportada()){ box.innerHTML = ""; return; }
+    if(rec.state === "idle"){
+      box.innerHTML = `<button type="button" class="rec-btn" data-rec="start">🎙️ Gravar relato por áudio</button>
+        <div class="rec-hint">Dite o relato; o texto aparece abaixo para você revisar antes de salvar.</div>`;
+    } else if(rec.state === "recording" || rec.state === "paused"){
+      const paused = rec.state === "paused";
+      box.innerHTML = `<div class="rec-panel">
+        <div class="rec-live">
+          <span class="rec-dot ${paused ? "paused" : ""}"></span>
+          <span class="rec-time" id="recTime">${fmtTempo(tempoGravado())}</span>
+          <span class="rec-lbl">${paused ? "Pausado" : "Gravando…"}</span>
+        </div>
+        <div class="rec-actions">
+          <button type="button" data-rec="${paused ? "resume" : "pause"}">${paused ? "Continuar" : "Pausar"}</button>
+          <button type="button" class="primary" data-rec="stop">Concluir</button>
+          <button type="button" class="danger" data-rec="discard">Descartar</button>
+        </div></div>`;
+    } else if(rec.state === "transcribing"){
+      box.innerHTML = `<div class="rec-panel"><div class="rec-msg" style="margin:0;">
+        <span class="rec-spin"></span>Transcrevendo o áudio… isso leva alguns segundos.</div></div>`;
+    } else if(rec.state === "failed"){
+      box.innerHTML = `<div class="rec-panel">
+        <div class="rec-msg erro">${escapeHtml(rec.erro || "Falha na transcrição.")}</div>
+        <div class="rec-actions">
+          <button type="button" class="primary" data-rec="retry">Tentar de novo</button>
+          <button type="button" data-rec="download">Baixar áudio</button>
+          <button type="button" class="danger" data-rec="drop">Descartar</button>
+        </div></div>`;
+    }
+  }
+
+  async function manterTelaLigada(){
+    try{
+      if('wakeLock' in navigator && !rec.wakeLock){
+        rec.wakeLock = await navigator.wakeLock.request('screen');
+        rec.wakeLock.addEventListener('release', ()=>{ rec.wakeLock = null; });
+      }
+    }catch(_){}
+  }
+  function liberarTela(){
+    try{ if(rec.wakeLock) rec.wakeLock.release(); }catch(_){}
+    rec.wakeLock = null;
+  }
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible' && (rec.state === "recording" || rec.state === "paused")) manterTelaLigada();
+  });
+
+  async function iniciarGravacao(){
+    try{
+      rec.stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, channelCount:1 } });
+    }catch(e){
+      toast("Permita o acesso ao microfone para gravar");
+      return;
+    }
+    const mime = escolherMime();
+    const opts = { audioBitsPerSecond: 32000 };
+    if(mime) opts.mimeType = mime;
+    try{ rec.mr = new MediaRecorder(rec.stream, opts); }
+    catch(_){ rec.mr = new MediaRecorder(rec.stream); }
+    rec.mime = rec.mr.mimeType || mime || "audio/webm";
+    rec.chunks = []; rec.elapsed = 0; rec.discard = false; rec.pending = null; rec.erro = "";
+    rec.mr.ondataavailable = (e)=>{ if(e.data && e.data.size) rec.chunks.push(e.data); };
+    rec.mr.onstop = aoPararGravacao;
+    rec.mr.onerror = ()=>{ try{ rec.mr.stop(); }catch(_){} };
+    rec.mr.start(1000);
+    rec.startedAt = Date.now();
+    rec.state = "recording";
+    manterTelaLigada();
+    rec.timer = setInterval(()=>{
+      const t = tempoGravado();
+      const el = document.getElementById('recTime');
+      if(el) el.textContent = fmtTempo(t);
+      if(t >= REC_MAX_MS && rec.state === "recording"){
+        toast("Limite de 60 min atingido — gravação concluída");
+        pararGravacao(false);
+      }
+    }, 500);
+    updateRecUI();
+  }
+  function pausarGravacao(){
+    if(rec.state !== "recording") return;
+    try{ rec.mr.pause(); }catch(_){ return; }
+    rec.elapsed += Date.now() - rec.startedAt;
+    rec.state = "paused";
+    updateRecUI();
+  }
+  function continuarGravacao(){
+    if(rec.state !== "paused") return;
+    try{ rec.mr.resume(); }catch(_){ return; }
+    rec.startedAt = Date.now();
+    rec.state = "recording";
+    updateRecUI();
+  }
+  function pararGravacao(descartar){
+    if(rec.state !== "recording" && rec.state !== "paused") return;
+    if(rec.state === "recording") rec.elapsed += Date.now() - rec.startedAt;
+    rec.discard = !!descartar;
+    try{ rec.mr.stop(); }catch(_){ aoPararGravacao(); }
+  }
+  function aoPararGravacao(){
+    clearInterval(rec.timer); rec.timer = null;
+    liberarTela();
+    if(rec.stream){ rec.stream.getTracks().forEach(t=>t.stop()); rec.stream = null; }
+    rec.mr = null;
+    if(rec.discard || !rec.chunks.length){
+      rec.chunks = []; rec.state = "idle"; updateRecUI();
+      if(!rec.discard) toast("Nada foi gravado");
+      return;
+    }
+    rec.pending = new Blob(rec.chunks, { type: rec.mime });
+    rec.chunks = [];
+    transcreverPendente();
+  }
+
+  async function transcreverPendente(){
+    const blob = rec.pending;
+    if(!blob) return;
+    if(blob.size > REC_MAX_BYTES){
+      rec.state = "failed";
+      rec.erro = "A gravação ficou grande demais para transcrever. Baixe o áudio para não perder.";
+      updateRecUI();
+      return;
+    }
+    rec.state = "transcribing"; rec.erro = "";
+    updateRecUI();
+    const ctrl = new AbortController();
+    const timeout = setTimeout(()=>ctrl.abort(), 180000);
+    try{
+      const fd = new FormData();
+      fd.append("file", blob, "relato." + extDoMime(rec.mime));
+      const res = await fetch(window.TRANSCRICAO_URL.trim(), { method:"POST", body:fd, signal:ctrl.signal });
+      let data = {};
+      try{ data = await res.json(); }catch(_){}
+      if(!res.ok) throw new Error(data.error || ("Erro no servidor de transcrição (" + res.status + ")."));
+      const texto = String(data.text || "").trim();
+      if(!texto) throw new Error("Não foi possível entender o áudio. Tente gravar de novo.");
+      const ta = document.getElementById('fRelato');
+      ta.value = ta.value.trim() ? ta.value.replace(/\s+$/, "") + "\n\n" + texto : texto;
+      autoGrowRelato();
+      rec.pending = null; rec.state = "idle";
+      updateRecUI();
+      toast("Relato transcrito — revise e salve");
+    }catch(e){
+      rec.state = "failed";
+      if(!navigator.onLine) rec.erro = "Sem internet. Conecte-se e toque em “Tentar de novo”.";
+      else if(e && e.name === "AbortError") rec.erro = "A transcrição demorou demais. Tente de novo.";
+      else rec.erro = (e && e.message) || "Falha na transcrição.";
+      updateRecUI();
+    }finally{
+      clearTimeout(timeout);
+    }
+  }
+  function baixarAudioPendente(){
+    if(!rec.pending) return;
+    const url = URL.createObjectURL(rec.pending);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `relato-${new Date().toISOString().slice(0,10)}.${extDoMime(rec.mime)}`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  }
+  // Impede fechar/salvar o plantão no meio de uma gravação ou transcrição.
+  function relatoPodeSair(msgPendente){
+    if(rec.state === "recording" || rec.state === "paused"){ toast("Conclua ou descarte a gravação antes"); return false; }
+    if(rec.state === "transcribing"){ toast("Aguarde a transcrição terminar"); return false; }
+    if(rec.state === "failed"){
+      if(!confirm(msgPendente)) return false;
+      rec.pending = null; rec.state = "idle"; rec.erro = "";
+      updateRecUI();
+    }
+    return true;
+  }
+
+  document.getElementById('recBox').addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-rec]');
+    if(!btn) return;
+    const acao = btn.dataset.rec;
+    if(acao === "start") iniciarGravacao();
+    else if(acao === "pause") pausarGravacao();
+    else if(acao === "resume") continuarGravacao();
+    else if(acao === "stop") pararGravacao(false);
+    else if(acao === "discard"){ if(confirm("Descartar esta gravação?")) pararGravacao(true); }
+    else if(acao === "retry") transcreverPendente();
+    else if(acao === "download") baixarAudioPendente();
+    else if(acao === "drop"){
+      if(confirm("Descartar o áudio sem transcrever?")){ rec.pending = null; rec.state = "idle"; updateRecUI(); }
+    }
   });
 
   /* ================= TABS ================= */
