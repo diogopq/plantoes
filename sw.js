@@ -37,11 +37,13 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-const CACHE_NAME = "plantoes-vet-v17";
+const CACHE_NAME = "plantoes-vet-v18";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
+  "./notifications-config.js",
+  "./transcricao-config.js",
   "./icon-192.png",
   "./icon-512.png",
   "./icon-192-maskable.png",
@@ -51,33 +53,60 @@ const ASSETS = [
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).catch(() => {})
+    caches.open(CACHE_NAME)
+      // cache: "reload" ignora o cache HTTP do navegador, garantindo que a
+      // versão nova realmente venha do servidor (e não uma cópia antiga).
+      .then((cache) => cache.addAll(ASSETS.map((u) => new Request(u, { cache: "reload" }))))
+      .catch(() => {})
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
+// Página, scripts e configs: REDE PRIMEIRO (sempre a versão mais nova quando
+// há internet; o cache só é usado offline). Imagens: cache primeiro.
+// Antes era tudo "cache primeiro", e por isso o celular continuava abrindo a
+// versão antiga do app mesmo depois de publicar uma nova.
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
+  const req = event.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return; // Firebase etc.: direto na rede
+
+  const isImage = req.destination === "image" || /\.(png|jpg|jpeg|svg|ico|webp)$/i.test(url.pathname);
+
+  if (isImage) {
+    event.respondWith(
+      caches.match(req).then((cached) => cached || fetch(req).then((res) => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(req, clone));
+        }
+        return res;
+      }))
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const network = fetch(event.request)
-        .then((res) => {
-          if (res && res.status === 200) {
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
+    fetch(new Request(req, { cache: "no-cache" }))
+      .then((res) => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(req, clone));
+        }
+        return res;
+      })
+      .catch(() =>
+        caches.match(req).then((cached) =>
+          cached || (req.mode === "navigate" ? caches.match("./index.html") : undefined)
+        )
+      )
   );
 });

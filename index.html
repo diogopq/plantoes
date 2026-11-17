@@ -2112,7 +2112,33 @@
 
   /* ================= PWA: service worker (hosted files) ================= */
   if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg)=>{
+      // No celular o app costuma ficar "adormecido" em segundo plano em vez de
+      // fechar; ao voltar para ele, verifica se há versão nova publicada.
+      document.addEventListener('visibilitychange', ()=>{
+        if(document.visibilityState === 'visible') reg.update().catch(()=>{});
+      });
+    }).catch(()=>{});
+    // Quando uma versão nova assume, oferece atualizar (não recarrega sozinho
+    // para não interromper um cadastro em andamento nem pedir o PIN do nada).
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if(!hadController || navigator.serviceWorker.__avisado) return;
+      navigator.serviceWorker.__avisado = true;
+      const t = document.getElementById('toast');
+      t.innerHTML = "";
+      const span = document.createElement('span');
+      span.textContent = "Nova versão do app disponível";
+      const btn = document.createElement('button');
+      btn.className = "toast-action";
+      btn.type = "button";
+      btn.textContent = "Atualizar";
+      btn.addEventListener('click', ()=> location.reload(), { once:true });
+      t.append(span, btn);
+      clearTimeout(toast._h);
+      t.classList.add('show','has-action');
+      toast._h = setTimeout(()=>t.classList.remove('show','has-action'), 15000);
+    });
   }
 })();
 </script>
