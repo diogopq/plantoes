@@ -37,7 +37,7 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-const CACHE_NAME = "plantoes-vet-v19";
+const CACHE_NAME = "plantoes-vet-v20";
 const ASSETS = [
   "./",
   "./index.html",
@@ -62,11 +62,27 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    // Versões até a v17 serviam o app "cache primeiro" e não sabem avisar
+    // sobre atualização. Se o aparelho vinha de uma delas, a tela aberta está
+    // rodando código antigo: recarregamos à força uma única vez.
+    const vinhaDeVersaoAntiga = keys.some((k) => {
+      const m = /^plantoes-vet-v(\d+)$/.exec(k);
+      return m && Number(m[1]) <= 17;
+    });
+    await Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+    await self.clients.claim();
+    if (vinhaDeVersaoAntiga) {
+      // Fora do waitUntil de propósito: a recarga só pode acontecer depois que
+      // esta versão terminar de ativar (senão uma espera pela outra e trava).
+      setTimeout(() => {
+        self.clients.matchAll({ type: "window" }).then((janelas) =>
+          janelas.forEach((c) => { if ("navigate" in c) c.navigate(c.url).catch(() => {}); })
+        );
+      }, 0);
+    }
+  })());
 });
 
 // Página, scripts e configs: REDE PRIMEIRO (sempre a versão mais nova quando
