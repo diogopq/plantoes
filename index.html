@@ -445,13 +445,35 @@
   .toast{
     position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px);
     background:var(--toast-bg); color:var(--toast-fg); padding:11px 18px; border-radius:99px; font-size:13.5px; font-weight:600;
-    opacity:0; transition:all .25s ease; pointer-events:none; z-index:60; white-space:nowrap;
+    opacity:0; transition:all .25s ease; pointer-events:none; z-index:105; white-space:nowrap;
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
   .toast.has-action{pointer-events:auto;display:flex;align-items:center;gap:14px;padding:8px 8px 8px 18px;}
   .toast-action{
     background:none;border:none;color:inherit;font-family:inherit;font-size:13.5px;font-weight:800;
     text-decoration:underline;padding:6px 10px;border-radius:99px;cursor:pointer;
+  }
+
+  /* Faixa de "nova versão disponível" (fica no topo até tocar) */
+  .update-banner{
+    position:fixed; left:12px; right:12px; top:calc(10px + env(safe-area-inset-top)); z-index:110;
+    display:flex; align-items:center; gap:12px; padding:12px 12px 12px 16px;
+    background:var(--amber-bg); color:var(--ink); border:1px solid var(--amber); border-radius:16px;
+    box-shadow:var(--shadow); font-size:14px; line-height:1.3;
+    transform:translateY(-140%); opacity:0; transition:transform .3s ease, opacity .3s ease;
+  }
+  .update-banner.show{transform:translateY(0); opacity:1;}
+  .update-banner .ub-icon{font-size:22px; flex:none;}
+  .update-banner .ub-text{flex:1; min-width:0;}
+  .update-banner .ub-text strong{display:block; font-size:14.5px;}
+  .update-banner .ub-text span{color:var(--ink-soft); font-size:12.5px;}
+  .update-banner .ub-btn{
+    flex:none; background:var(--amber); color:var(--paper); border:none; border-radius:99px;
+    padding:10px 16px; font-family:inherit; font-size:14px; font-weight:800; cursor:pointer;
+  }
+  .update-banner .ub-close{
+    flex:none; background:none; border:none; color:var(--ink-soft); font-size:20px; line-height:1;
+    padding:6px; cursor:pointer; font-family:inherit;
   }
 </style>
 </head>
@@ -2112,6 +2134,35 @@
 
   /* ================= PWA: service worker (hosted files) ================= */
   if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
+    // Faixa bem visível no topo avisando que há versão nova.
+    function mostrarAvisoAtualizacao(){
+      if(document.getElementById('updateBanner')) return;
+      const b = document.createElement('div');
+      b.id = 'updateBanner';
+      b.className = 'update-banner';
+      b.setAttribute('role','alert');
+      b.innerHTML = '<span class="ub-icon" aria-hidden="true">✨</span>'
+        + '<div class="ub-text"><strong>Nova versão disponível</strong><span>Toque em Atualizar para usar as novidades.</span></div>'
+        + '<button type="button" class="ub-btn">Atualizar</button>'
+        + '<button type="button" class="ub-close" aria-label="Agora não">×</button>';
+      b.querySelector('.ub-btn').addEventListener('click', ()=>{
+        try{ sessionStorage.setItem('vet-acabou-de-atualizar','1'); }catch(_){}
+        location.reload();
+      });
+      b.querySelector('.ub-close').addEventListener('click', ()=>{
+        b.classList.remove('show');
+        setTimeout(()=>b.remove(), 350);
+      });
+      document.body.appendChild(b);
+      requestAnimationFrame(()=>requestAnimationFrame(()=>b.classList.add('show')));
+    }
+    // Depois de tocar em "Atualizar", confirma que deu certo.
+    try{
+      if(sessionStorage.getItem('vet-acabou-de-atualizar') === '1'){
+        sessionStorage.removeItem('vet-acabou-de-atualizar');
+        setTimeout(()=>toast('✓ App atualizado'), 600);
+      }
+    }catch(_){}
     const hadController = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg)=>{
       // No celular o app costuma ficar "adormecido" em segundo plano em vez de
@@ -2125,19 +2176,7 @@
     navigator.serviceWorker.addEventListener('controllerchange', ()=>{
       if(!hadController || navigator.serviceWorker.__avisado) return;
       navigator.serviceWorker.__avisado = true;
-      const t = document.getElementById('toast');
-      t.innerHTML = "";
-      const span = document.createElement('span');
-      span.textContent = "Nova versão do app disponível";
-      const btn = document.createElement('button');
-      btn.className = "toast-action";
-      btn.type = "button";
-      btn.textContent = "Atualizar";
-      btn.addEventListener('click', ()=> location.reload(), { once:true });
-      t.append(span, btn);
-      clearTimeout(toast._h);
-      t.classList.add('show','has-action');
-      toast._h = setTimeout(()=>t.classList.remove('show','has-action'), 15000);
+      mostrarAvisoAtualizacao();
     });
   }
 })();
