@@ -40,6 +40,14 @@ Sem o passo 1 a faixa "Nova versão disponível" não aparece no celular.
   `plantoes-vet-v17` ou anterior (versões antigas sem a faixa).
 - Sem internet o app abre a cópia guardada — é esperado não atualizar offline.
 
+## Choque de horários
+
+- Plantões têm `horaInicio`/`horaFim` opcionais (fim ≤ início = termina no dia
+  seguinte; iguais = 24h). `verificarConflitos` em `index.html` compara com
+  plantões até 2 dias de distância.
+- Encavalado → aviso vermelho + confirmação ao salvar. Descanso menor que
+  `DESCANSO_MIN_HORAS` (11h) → só aviso, não bloqueia.
+
 ## Dados — cuidado
 
 - Plantões, pacientes e agenda ficam **só no aparelho** (`localStorage`:

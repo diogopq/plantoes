@@ -37,7 +37,7 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-const CACHE_NAME = "plantoes-vet-v21";
+const CACHE_NAME = "plantoes-vet-v22";
 const ASSETS = [
   "./",
   "./index.html",

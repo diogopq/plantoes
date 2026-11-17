@@ -2,6 +2,12 @@
 
 A versão aparece no app em **Backup**, embaixo de "Último backup".
 
+## v22 · 17/11/2026
+- Horário de início e fim (opcionais) no cadastro do plantão; aparece no cartão.
+- Aviso de **horário encavalado** com outro plantão (pede confirmação antes de
+  salvar) e de **descanso curto** (menos de 11h entre plantões, só avisa).
+- Se já houver plantão no mesmo dia sem horário, avisa para conferir.
+
 ## v21 · 17/11/2026
 - Número da versão visível na tela de Backup, para conferir se o celular atualizou.
 

@@ -316,6 +316,14 @@
   .sheet-handle{width:38px;height:4px;background:var(--line);border-radius:99px;margin:6px auto 14px;}
   .sheet h2{font-family:'Fraunces',serif;font-size:19px;margin:0 0 16px;color:var(--brand-ink);}
   .field{margin-bottom:14px;}
+  .field-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .field-pair .field{margin-bottom:0;}
+  .field-hint{font-size:12px;color:var(--ink-soft);margin:6px 0 14px;line-height:1.4;}
+  .conflito-box{display:none;border-radius:12px;padding:10px 12px;margin:-4px 0 14px;font-size:13px;line-height:1.45;}
+  .conflito-box.show{display:block;}
+  .conflito-box.choque{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger);}
+  .conflito-box.descanso, .conflito-box.info{background:var(--amber-bg);color:var(--ink);border:1px solid var(--amber);}
+  .conflito-box div + div{margin-top:4px;}
   .field label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;}
   .field input, .field textarea, .field select{
     width:100%; border:1.5px solid var(--line); background:var(--paper);
@@ -604,6 +612,18 @@
     <label for="fData">Data</label>
     <input type="date" id="fData">
   </div>
+  <div class="field-pair">
+    <div class="field">
+      <label for="fHoraInicio">Início <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+      <input type="time" id="fHoraInicio">
+    </div>
+    <div class="field">
+      <label for="fHoraFim">Fim <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+      <input type="time" id="fHoraFim">
+    </div>
+  </div>
+  <div class="field-hint">Se o fim for antes do início (ex.: 19:00 às 07:00), o plantão termina no dia seguinte. Início igual ao fim = 24 horas.</div>
+  <div class="conflito-box" id="fConflito" role="status"></div>
   <div class="field">
     <label for="fLocal">Local</label>
     <input type="text" id="fLocal" placeholder="Ex: Clínica São Francisco">
@@ -739,7 +759,7 @@
   </div>
   <input type="file" id="importFileInput" accept="application/json" style="display:none;">
   <div class="last-backup" id="lastBackupText">Último backup: nunca</div>
-  <div class="last-backup" id="appVersion" style="margin-top:6px;opacity:.75;">Versão do app: 21 · 17/11/2026</div>
+  <div class="last-backup" id="appVersion" style="margin-top:6px;opacity:.75;">Versão do app: 22 · 17/11/2026</div>
   <div class="sheet-actions">
     <button class="btn btn-ghost" id="btnCloseBackup" style="flex:1;">Fechar</button>
   </div>
@@ -1034,7 +1054,7 @@
           <div class="card-top">
             <div>
               <div class="date-badge">${String(d.getDate()).padStart(2,'0')} de ${MESES[d.getMonth()]}</div>
-              <div class="weekday">${DIAS_SEMANA[d.getDay()]}</div>
+              <div class="weekday">${DIAS_SEMANA[d.getDay()]}${p.horaInicio ? ` · 🕒 ${p.horaInicio}${p.horaFim ? '–' + p.horaFim : ''}` : ''}</div>
             </div>
             <div class="valor">${fmtMoney(p.valor)}</div>
           </div>
@@ -1146,6 +1166,8 @@
     if(isEdit){
       const item = plantoes.find(x=>x.id===editingId);
       document.getElementById('fData').value = item.data;
+      document.getElementById('fHoraInicio').value = item.horaInicio || "";
+      document.getElementById('fHoraFim').value = item.horaFim || "";
       document.getElementById('fLocal').value = item.local || "";
       document.getElementById('fValor').value = item.valor || "";
       document.getElementById('fNumPacientes').value = (item.numPacientes || item.numPacientes===0) ? item.numPacientes : "";
@@ -1160,6 +1182,8 @@
       const defaultDate = (today.getFullYear()===y && today.getMonth()===m) ? today : new Date(y,m,1);
       document.getElementById('fData').value = dataInicial || isoDia(defaultDate.getFullYear(), defaultDate.getMonth(), defaultDate.getDate());
       document.getElementById('fLocal').value = "";
+      document.getElementById('fHoraInicio').value = "";
+      document.getElementById('fHoraFim').value = "";
       document.getElementById('fValor').value = "";
       document.getElementById('fNumPacientes').value = "";
       document.getElementById('fObs').value = "";
@@ -1169,10 +1193,92 @@
       updateNamesUI([]);
     }
     updateRecUI();
+    atualizarAvisoConflito();
     overlay.classList.add('open');
     sheet.classList.add('open');
     autoGrowRelato();
   }
+
+  /* ========== Choque de horários e descanso curto entre plantões ========== */
+  const DESCANSO_MIN_HORAS = 11; // abaixo disso, avisa "descanso curto"
+
+  // Converte o plantão em intervalo [início, fim] em milissegundos.
+  // Sem início -> null (não dá para calcular). Sem fim -> só o instante do início.
+  function intervaloPlantao(p){
+    if(!p || !p.data || !p.horaInicio) return null;
+    const [y,m,d] = p.data.split('-').map(Number);
+    const [hi,mi] = p.horaInicio.split(':').map(Number);
+    const ini = new Date(y, m-1, d, hi, mi).getTime();
+    if(!p.horaFim) return {ini, fim:ini, semFim:true};
+    const [hf,mf] = p.horaFim.split(':').map(Number);
+    let fim = new Date(y, m-1, d, hf, mf).getTime();
+    if(fim <= ini) fim = new Date(y, m-1, d+1, hf, mf).getTime(); // vira o dia
+    return {ini, fim, semFim:false};
+  }
+  function descreverPlantao(p){
+    const d = parseLocalDate(p.data);
+    const dia = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+    const hora = p.horaInicio ? ` (${p.horaInicio}${p.horaFim ? '–' + p.horaFim : ''})` : '';
+    const local = p.local ? ` em ${p.local}` : '';
+    return `${dia}${hora}${local}`;
+  }
+  function fmtHoras(ms){
+    const min = Math.round(ms / 60000);
+    const h = Math.floor(min / 60), m = min % 60;
+    if(h === 0) return `${m} min`;
+    return m ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`;
+  }
+  // Retorna {choques:[], descansos:[], mesmoDia:[]} comparando com os outros plantões.
+  function verificarConflitos(novo, ignorarId){
+    const res = {choques:[], descansos:[], mesmoDia:[]};
+    if(!novo.data) return res;
+    const a = intervaloPlantao(novo);
+    const diaNovo = parseLocalDate(novo.data).getTime();
+    const DIA = 86400000;
+    plantoes.forEach(p=>{
+      if(!p || p.id === ignorarId || !p.data) return;
+      const diaOutro = parseLocalDate(p.data).getTime();
+      if(Math.abs(diaOutro - diaNovo) > 2*DIA) return; // longe demais, nem olha
+      const b = intervaloPlantao(p);
+      if(!a || !b){
+        if(p.data === novo.data) res.mesmoDia.push(p);
+        return;
+      }
+      // Choque: os intervalos se cruzam (encostar exatamente não conta).
+      if(a.ini < b.fim && b.ini < a.fim || (a.ini === b.ini)){
+        res.choques.push(p);
+        return;
+      }
+      if(a.semFim || b.semFim) return; // sem fim não dá para medir descanso
+      const descanso = a.ini >= b.fim ? a.ini - b.fim : b.ini - a.fim;
+      if(descanso < DESCANSO_MIN_HORAS * 3600000) res.descansos.push({p, descanso});
+    });
+    return res;
+  }
+  function plantaoDoFormulario(){
+    return {
+      data: document.getElementById('fData').value,
+      horaInicio: document.getElementById('fHoraInicio').value,
+      horaFim: document.getElementById('fHoraFim').value
+    };
+  }
+  function atualizarAvisoConflito(){
+    const box = document.getElementById('fConflito');
+    const r = verificarConflitos(plantaoDoFormulario(), editingId);
+    const linhas = [];
+    r.choques.forEach(p=> linhas.push(`⚠️ <strong>Horário encavalado</strong> com o plantão de ${escapeHtml(descreverPlantao(p))}.`));
+    r.descansos.forEach(({p, descanso})=> linhas.push(descanso === 0
+      ? `😴 <strong>Plantões emendados:</strong> sem descanso entre este e o plantão de ${escapeHtml(descreverPlantao(p))}.`
+      : `😴 <strong>Descanso curto:</strong> só ${fmtHoras(descanso)} entre este e o plantão de ${escapeHtml(descreverPlantao(p))}.`));
+    r.mesmoDia.forEach(p=> linhas.push(`ℹ️ Já existe plantão no mesmo dia: ${escapeHtml(descreverPlantao(p))}. Preencha os horários para conferir se há choque.`));
+    box.className = 'conflito-box' + (linhas.length ? ' show ' + (r.choques.length ? 'choque' : (r.descansos.length ? 'descanso' : 'info')) : '');
+    box.innerHTML = linhas.map(l=>`<div>${l}</div>`).join('');
+  }
+  ['fData','fHoraInicio','fHoraFim'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.addEventListener('input', atualizarAvisoConflito);
+    el.addEventListener('change', atualizarAvisoConflito);
+  });
   function closeSheet(){
     if(sheet.classList.contains('open') && !relatoPodeSair("Há uma gravação que ainda não foi transcrita. Fechar e descartar o áudio?")) return;
     overlay.classList.remove('open');
@@ -1238,6 +1344,8 @@
 
   document.getElementById('btnSave').addEventListener('click', ()=>{
     const dataVal = document.getElementById('fData').value;
+    const horaInicio = document.getElementById('fHoraInicio').value;
+    const horaFim = document.getElementById('fHoraFim').value;
     const local = document.getElementById('fLocal').value.trim();
     const valor = parseFloat(document.getElementById('fValor').value);
     const numPacientesRaw = document.getElementById('fNumPacientes').value.trim();
@@ -1253,16 +1361,22 @@
 
     if(!dataVal){ toast("Informe a data do plantão"); return; }
     if(!valor || valor<=0){ toast("Informe um valor válido"); return; }
+    if(horaFim && !horaInicio){ toast("Informe também o horário de início"); return; }
+    const conflitos = verificarConflitos({data:dataVal, horaInicio, horaFim}, editingId);
+    if(conflitos.choques.length){
+      const lista = conflitos.choques.map(p=>'• ' + descreverPlantao(p)).join('\n');
+      if(!confirm(`Este plantão encavala com:\n${lista}\n\nSalvar mesmo assim?`)) return;
+    }
     if(!relatoPodeSair("Há uma gravação que ainda não foi transcrita. Salvar mesmo assim e descartar o áudio?")) return;
 
     let savedItem;
     if(editingId){
       const item = plantoes.find(x=>x.id===editingId);
-      Object.assign(item, {data:dataVal, local, valor, numPacientes, nomesPacientes, obs, relato, recebido});
+      Object.assign(item, {data:dataVal, horaInicio, horaFim, local, valor, numPacientes, nomesPacientes, obs, relato, recebido});
       savedItem = item;
       toast("Plantão atualizado");
     } else {
-      savedItem = {id:uid(), data:dataVal, local, valor, numPacientes, nomesPacientes, obs, relato, recebido, createdAt:Date.now()};
+      savedItem = {id:uid(), data:dataVal, horaInicio, horaFim, local, valor, numPacientes, nomesPacientes, obs, relato, recebido, createdAt:Date.now()};
       plantoes.push(savedItem);
       toast("Plantão salvo");
     }
@@ -1272,6 +1386,12 @@
     currentDate = new Date(savedDate.getFullYear(), savedDate.getMonth(), 1);
     closeSheet();
     render();
+    if(!conflitos.choques.length && conflitos.descansos.length){
+      const menor = conflitos.descansos.reduce((x,y)=> x.descanso <= y.descanso ? x : y);
+      setTimeout(()=>toast(menor.descanso === 0
+        ? `Atenção: sem descanso, emendado com o plantão de ${descreverPlantao(menor.p)}`
+        : `Atenção: só ${fmtHoras(menor.descanso)} de descanso até o plantão de ${descreverPlantao(menor.p)}`), 1900);
+    }
   });
 
   document.getElementById('btnDelete').addEventListener('click', ()=>{
