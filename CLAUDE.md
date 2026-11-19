@@ -12,6 +12,9 @@ de `diogopq.github.io/plantoes`.
 - `manifest.json`, ícones — instalação na tela inicial.
 - `notifications-config.js` — config do Firebase (chaves públicas de app web).
 - `transcricao-config.js` — endereço do Worker de transcrição de áudio.
+- `escala-config.js` — endereço do Worker que lê a foto da escala
+  (`plantoes-escala`, Workers AI, modelo Mistral Small 3.1; código fora do git
+  em `cloudflare-worker/escala/`). Vazio = botão "Importar escala" oculto.
 - `automation/scripts/send-lembretes.js` + `.github/workflows/lembrete-diario.yml`
   — lembrete diário às 07:00 de Brasília via GitHub Actions + Firebase.
 
@@ -47,6 +50,15 @@ Sem o passo 1 a faixa "Nova versão disponível" não aparece no celular.
   plantões até 2 dias de distância.
 - Encavalado → aviso vermelho + confirmação ao salvar. Descanso menor que
   `DESCANSO_MIN_HORAS` (11h) → só aviso, não bloqueia.
+
+## Importar escala por foto
+
+- Bloco "IMPORTAR ESCALA POR FOTO" em `index.html`. O Worker devolve todas as
+  pessoas; o app filtra o nome (palavra inteira: "Laís" casa, "Laísa" não).
+- `importarEscala` nunca sobrescreve nem duplica: pula se já existe plantão no
+  mesmo dia + mesmo local (um contém o outro) + mesmo horário de início.
+  Arquivos `.json` com `"origem":"escala"` no Importar backup usam essa regra.
+- A leitura erra às vezes nome escrito à mão: manter a tela de conferência.
 
 ## Dados — cuidado
 

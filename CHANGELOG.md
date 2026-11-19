@@ -2,6 +2,14 @@
 
 A versão aparece no app em **Backup**, embaixo de "Último backup".
 
+## v23 · 19/11/2026
+- Novo botão **📷 Importar escala por foto** na aba Plantões: tire foto da escala
+  do mês, o app lê e separa só os dias com o seu nome (dia 08–20h, noite 20–08h,
+  dá para mudar). Você confere a lista antes de importar.
+- A importação **não sobrescreve nem duplica**: o que já estiver cadastrado no
+  mesmo dia e local é pulado. Se encavalar com plantão de outro local, avisa.
+- Nomes escritos à mão às vezes saem errados: sempre confira com a foto.
+
 ## v22 · 17/11/2026
 - Horário de início e fim (opcionais) no cadastro do plantão; aparece no cartão.
 - Aviso de **horário encavalado** com outro plantão (pede confirmação antes de

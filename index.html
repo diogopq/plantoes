@@ -18,6 +18,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
 <script src="notifications-config.js" defer onerror="window.__notifConfigMissing=true"></script>
 <script src="transcricao-config.js" defer></script>
+<script src="escala-config.js" defer></script>
 <style>
   :root{
     --bg:#EEF2EE;
@@ -375,6 +376,19 @@
   .btn-ghost{background:var(--paper); color:var(--ink-soft); border:1.5px solid var(--line);}
   .btn-delete{background:var(--danger-bg);color:var(--danger); border:none; margin-top:10px; width:100%; border-radius:12px; padding:12px; font-weight:700; font-size:13.5px; cursor:pointer;}
 
+  /* ---------- IMPORTAR ESCALA ---------- */
+  .escala-btn{margin-top:14px;}
+  .esc-preview{display:block;max-width:100%;max-height:180px;border-radius:12px;margin:10px auto 0;border:1px solid var(--line);}
+  .esc-status{font-size:13px;color:var(--ink-soft);margin:4px 0 0;line-height:1.4;min-height:18px;}
+  .esc-status.erro{color:var(--danger);font-weight:600;}
+  .esc-lista{display:flex;flex-direction:column;gap:6px;margin:4px 0 6px;}
+  .esc-item{display:flex;align-items:center;gap:10px;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;}
+  .esc-item input{width:19px;height:19px;accent-color:var(--brand);flex:none;}
+  .esc-item .esc-txt{font-size:14px;font-weight:600;color:var(--ink);line-height:1.3;}
+  .esc-item .esc-sub{display:block;font-size:12px;font-weight:400;color:var(--ink-soft);}
+  .esc-item.ja{opacity:.6;}
+  .esc-tag{font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px;margin-left:4px;background:var(--amber-bg);color:var(--ink);border:1px solid var(--amber);}
+
   /* ---------- RELATO POR ÁUDIO ---------- */
   .rec-box{margin-bottom:8px;}
   .rec-box:empty{display:none;}
@@ -578,6 +592,7 @@
         <button type="button" class="cal-toggle" id="calToggle">Ocultar calendário</button>
       </div>
     </div>
+    <button type="button" class="rec-btn escala-btn" id="btnEscala" style="display:none;">📷 Importar escala por foto</button>
     <div class="filters">
       <div class="chip active" data-filter="todos">Todos</div>
       <div class="chip" data-filter="pendente">Pendentes</div>
@@ -759,9 +774,50 @@
   </div>
   <input type="file" id="importFileInput" accept="application/json" style="display:none;">
   <div class="last-backup" id="lastBackupText">Último backup: nunca</div>
-  <div class="last-backup" id="appVersion" style="margin-top:6px;opacity:.75;">Versão do app: 22 · 17/11/2026</div>
+  <div class="last-backup" id="appVersion" style="margin-top:6px;opacity:.75;">Versão do app: 23 · 19/11/2026</div>
   <div class="sheet-actions">
     <button class="btn btn-ghost" id="btnCloseBackup" style="flex:1;">Fechar</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheetEscala">
+  <div class="sheet-handle"></div>
+  <h2>Importar escala</h2>
+  <div id="escPasso1">
+    <p class="field-hint" style="margin-top:0;">Tire uma foto da escala do mês (ou escolha da galeria). O app lê a foto e separa só os dias em que aparece o seu nome. Você confere tudo antes de importar. A foto é usada só para a leitura e não fica guardada.</p>
+    <div class="field">
+      <button type="button" class="rec-btn" id="escFotoBtn">📷 Escolher foto da escala</button>
+      <input type="file" id="escFoto" accept="image/*" style="display:none;">
+      <img id="escPreview" class="esc-preview" alt="" style="display:none;">
+    </div>
+    <div class="field-pair">
+      <div class="field"><label for="escNome">Nome na escala</label><input type="text" id="escNome" value="Laís"></div>
+      <div class="field"><label for="escLocal">Local</label><input type="text" id="escLocal" list="escLocais" placeholder="Ex: SoulCat"></div>
+    </div>
+    <datalist id="escLocais"></datalist>
+    <div class="field" style="margin-top:14px;"><label for="escValor">Valor de cada plantão (R$)</label><input type="number" id="escValor" inputmode="decimal" step="0.01" min="0" placeholder="0,00"></div>
+    <div class="field-pair">
+      <div class="field"><label for="escDiaIni">Turno do dia: início</label><input type="time" id="escDiaIni" value="08:00"></div>
+      <div class="field"><label for="escDiaFim">fim</label><input type="time" id="escDiaFim" value="20:00"></div>
+    </div>
+    <div class="field-pair" style="margin-top:14px;">
+      <div class="field"><label for="escNoiteIni">Turno da noite: início</label><input type="time" id="escNoiteIni" value="20:00"></div>
+      <div class="field"><label for="escNoiteFim">fim</label><input type="time" id="escNoiteFim" value="08:00"></div>
+    </div>
+  </div>
+  <div id="escPasso2" style="display:none;">
+    <div class="field-pair">
+      <div class="field"><label for="escMes">Mês</label><select id="escMes"></select></div>
+      <div class="field"><label for="escAno">Ano</label><input type="number" id="escAno" inputmode="numeric"></div>
+    </div>
+    <p class="field-hint" id="escResumo"></p>
+    <div class="esc-lista" id="escLista"></div>
+    <p class="field-hint">Confira com a foto: a leitura pode errar, principalmente em nomes escritos à mão. Dias de outro mês vêm desmarcados. O que já estiver cadastrado no mesmo dia e local é pulado.</p>
+  </div>
+  <p class="esc-status" id="escStatus"></p>
+  <div class="sheet-actions">
+    <button class="btn btn-ghost" id="escFechar">Fechar</button>
+    <button class="btn btn-primary" id="escAcao" disabled>Ler escala</button>
   </div>
 </div>
 
@@ -1280,6 +1336,8 @@
     el.addEventListener('change', atualizarAvisoConflito);
   });
   function closeSheet(){
+    const seAberta = document.getElementById('sheetEscala');
+    if(seAberta && seAberta.classList.contains('open') && !escalaPodeFechar()) return;
     if(sheet.classList.contains('open') && !relatoPodeSair("Há uma gravação que ainda não foi transcrita. Fechar e descartar o áudio?")) return;
     overlay.classList.remove('open');
     sheet.classList.remove('open');
@@ -1288,6 +1346,8 @@
     const sb = document.getElementById('sheetBackup');
     const sn = document.getElementById('sheetNotif');
     const sa = document.getElementById('sheetAgenda');
+    const se = document.getElementById('sheetEscala');
+    if(se) se.classList.remove('open');
     if(sp) sp.classList.remove('open');
     if(sb) sb.classList.remove('open');
     if(sn) sn.classList.remove('open');
@@ -2204,6 +2264,314 @@
     document.getElementById('importFileInput').click();
   });
 
+  /* ========== IMPORTAR ESCALA POR FOTO ==========
+     A foto vai para window.ESCALA_URL (Cloudflare Worker + Workers AI), que
+     devolve TODAS as pessoas da escala. Aqui separamos só o nome da Laís,
+     ela confere e importa. Nunca sobrescreve nem duplica: pula o que já
+     existe no mesmo dia e local. */
+  const ESCALA_PREFS_KEY = "vet-escala-prefs";
+  const DIAS_CURTOS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+  const esc = { imagem:null, resposta:null, achados:[], lendo:false, ctrl:null, wakeLock:null };
+
+  function escalaConfigurada(){
+    return typeof window.ESCALA_URL === "string" && /^https:\/\//.test(window.ESCALA_URL.trim());
+  }
+  function normTexto(s){
+    return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  }
+  function normLocal(s){ return normTexto(s).replace(/[^a-z0-9]/g, ""); }
+  // "Laís", "LAIS", "Dra. Laís", "Clara/Lais" casam; "Laísa", "Thaís" não (palavra inteira).
+  function nomeCasa(nome, procurado){
+    const alvo = normTexto(procurado).trim().split(/[^a-z]+/).filter(Boolean);
+    if(!alvo.length) return false;
+    const palavras = normTexto(nome).split(/[^a-z]+/);
+    return alvo.every(w=>palavras.includes(w));
+  }
+  // O modelo às vezes põe o rótulo do turno ("12h dia") em inicio/fim.
+  function classeTurno(it){
+    const t = normTexto([it.turno, it.inicio, it.fim].filter(Boolean).join(" "));
+    if(/noite|notur/.test(t)) return "noite";
+    if(/(^|[^a-z])dia([^a-z]|$)|diurn|manha|tarde/.test(t)) return "dia";
+    return "";
+  }
+  function horaValida(h){
+    const m = /^(\d{1,2})(?::|h)?(\d{2})?h?$/.exec(String(h || "").trim().toLowerCase());
+    if(!m) return "";
+    const hh = +m[1], mm = +(m[2] || 0);
+    return hh < 24 && mm < 60 ? String(hh).padStart(2,"0") + ":" + String(mm).padStart(2,"0") : "";
+  }
+  function escalaHorarios(){
+    return {
+      dia:   { inicio: document.getElementById('escDiaIni').value,   fim: document.getElementById('escDiaFim').value },
+      noite: { inicio: document.getElementById('escNoiteIni').value, fim: document.getElementById('escNoiteFim').value }
+    };
+  }
+  // Converte a leitura em plantões da pessoa procurada.
+  function plantoesDaEscala(resposta, mes, ano, nome, local, horarios){
+    const vistos = new Set(), saida = [];
+    (resposta.itens || []).forEach(it=>{
+      const dia = parseInt(it.dia, 10);
+      if(!nomeCasa(it.nome, nome) || !(dia >= 1 && dia <= 31) || !mes || !ano) return;
+      // semana que vira o mês: cada item traz o próprio mês
+      const mesItem = parseInt(it.mes, 10) || mes;
+      let anoItem = ano;
+      if(mes === 12 && mesItem === 1) anoItem = ano + 1;
+      if(mes === 1 && mesItem === 12) anoItem = ano - 1;
+      if(new Date(anoItem, mesItem-1, dia).getMonth() !== mesItem-1) return; // ex.: 31/02
+      const data = isoDia(anoItem, mesItem-1, dia);
+      const turno = classeTurno(it);
+      let horaInicio = horaValida(it.inicio), horaFim = horaValida(it.fim);
+      if(!horaInicio || !horaFim){ horaInicio = ""; horaFim = ""; }   // "12h dia" não é horário
+      if(!horaInicio && horarios[turno] && horarios[turno].inicio){
+        horaInicio = horarios[turno].inicio; horaFim = horarios[turno].fim || "";
+      }
+      const chave = data + "|" + (horaInicio || turno);
+      if(vistos.has(chave)) return;
+      vistos.add(chave);
+      saida.push({ data, horaInicio, horaFim, turno, local, nomeLido: String(it.nome || ""), outroMes: mesItem !== mes });
+    });
+    return saida.sort((a,b)=>(a.data + a.horaInicio).localeCompare(b.data + b.horaInicio));
+  }
+
+  // Mesmo dia + mesmo local (um contém o outro, ex. "SoulCat" e "Clínica Soul Cat";
+  // local vazio conta como igual) + mesmo turno (se os dois tiverem horário de início).
+  function ehMesmoPlantao(a, b){
+    if(a.data !== b.data) return false;
+    const la = normLocal(a.local), lb = normLocal(b.local);
+    if(la && lb && !la.includes(lb) && !lb.includes(la)) return false;
+    if(a.horaInicio && b.horaInicio && a.horaInicio !== b.horaInicio) return false;
+    return true;
+  }
+  // Importa sem sobrescrever nem duplicar. Usado pela tela da escala e por
+  // arquivos .json com "origem":"escala" no Importar backup.
+  function importarEscala(lista, jaConfirmado){
+    const validos = lista.filter(p=>p && p.id && /^\d{4}-\d{2}-\d{2}$/.test(p.data || ""));
+    if(!validos.length){ toast("Nenhum plantão para importar"); return null; }
+    if(!jaConfirmado && !confirm(`Importar ${validos.length} ${plural(validos.length,"plantão","plantões")} da escala?\n\nO que já estiver cadastrado no mesmo dia e local é pulado — nada é alterado nem apagado.`)) return null;
+    let novos = 0, pulados = 0;
+    const encavalados = [];
+    validos.forEach(item=>{
+      if(plantoes.some(p=>p.id === item.id || ehMesmoPlantao(p, item))){ pulados++; return; }
+      if(verificarConflitos(item).choques.length) encavalados.push(item);
+      plantoes.push(item);
+      syncPlantaoAgenda(item);
+      novos++;
+    });
+    if(novos){ save(); render(); }
+    let msg = `Escala: ${novos} ${plural(novos,"plantão importado","plantões importados")}`;
+    if(pulados) msg += `, ${pulados} já ${plural(pulados,"existia","existiam")}`;
+    toast(msg);
+    if(encavalados.length){
+      setTimeout(()=>alert(`Atenção: ${plural(encavalados.length,"este plantão importado encavala","estes plantões importados encavalam")} com outro já cadastrado em outro local — confira:\n` + encavalados.map(p=>'• ' + descreverPlantao(p)).join('\n')), 300);
+    }
+    return {novos, pulados};
+  }
+
+  /* ---- tela ---- */
+  const sheetEscala = document.getElementById('sheetEscala');
+  function escStatus(msg, erro){
+    const el = document.getElementById('escStatus');
+    el.textContent = msg || "";
+    el.classList.toggle('erro', !!erro);
+  }
+  function escLerPrefs(){ try{ return JSON.parse(localStorage.getItem(ESCALA_PREFS_KEY)) || {}; }catch(_){ return {}; } }
+  function escSalvarPrefs(){
+    try{
+      localStorage.setItem(ESCALA_PREFS_KEY, JSON.stringify({
+        nome: document.getElementById('escNome').value.trim(),
+        local: document.getElementById('escLocal').value.trim(),
+        valor: document.getElementById('escValor').value,
+        horarios: escalaHorarios()
+      }));
+    }catch(_){}
+  }
+  function escMostrarPasso(n){
+    document.getElementById('escPasso1').style.display = n === 1 ? "" : "none";
+    document.getElementById('escPasso2').style.display = n === 2 ? "" : "none";
+    const acao = document.getElementById('escAcao');
+    acao.textContent = n === 1 ? "Ler escala" : "Importar";
+    acao.disabled = n === 1 ? !esc.imagem : false;
+  }
+  function abrirEscala(){
+    const prefs = escLerPrefs();
+    document.getElementById('escNome').value = prefs.nome || "Laís";
+    document.getElementById('escLocal').value = prefs.local || "";
+    document.getElementById('escValor').value = prefs.valor || "";
+    const h = prefs.horarios || {};
+    document.getElementById('escDiaIni').value   = (h.dia && h.dia.inicio)   || "08:00";
+    document.getElementById('escDiaFim').value   = (h.dia && h.dia.fim)      || "20:00";
+    document.getElementById('escNoiteIni').value = (h.noite && h.noite.inicio) || "20:00";
+    document.getElementById('escNoiteFim').value = (h.noite && h.noite.fim)    || "08:00";
+    const locais = [...new Set(plantoes.map(p=>(p.local || "").trim()).filter(Boolean))].sort();
+    document.getElementById('escLocais').innerHTML = locais.map(l=>`<option value="${escapeHtml(l)}"></option>`).join("");
+    esc.imagem = null; esc.resposta = null; esc.achados = [];
+    document.getElementById('escFoto').value = "";
+    document.getElementById('escPreview').style.display = "none";
+    escStatus("");
+    escMostrarPasso(1);
+    overlay.classList.add('open');
+    sheetEscala.classList.add('open');
+  }
+  function escalaPodeFechar(){
+    if(!esc.lendo) return true;
+    if(!confirm("A escala ainda está sendo lida. Cancelar a leitura?")) return false;
+    if(esc.ctrl) esc.ctrl.abort();
+    return true;
+  }
+  // Reduz a foto (máx. 2000 px, JPEG) para ficar leve e abaixo do limite de 4 MB.
+  function reduzirFoto(file){
+    return new Promise((ok, falha)=>{
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = ()=>{
+        const k = Math.min(1, 2000 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(b=> b ? ok(b) : falha(new Error("conversão")), "image/jpeg", 0.85);
+      };
+      img.onerror = ()=>{ URL.revokeObjectURL(url); falha(new Error("formato")); };
+      img.src = url;
+    });
+  }
+  async function escLer(){
+    const t0 = Date.now();
+    esc.lendo = true;
+    esc.ctrl = new AbortController();
+    const limite = setTimeout(()=>esc.ctrl.abort(), 150000);
+    const acao = document.getElementById('escAcao');
+    acao.disabled = true;
+    const tick = setInterval(()=>escStatus(`Lendo a escala… ${Math.round((Date.now()-t0)/1000)} s (costuma levar de 30 s a 1 min; deixe o app aberto)`), 500);
+    try{ if('wakeLock' in navigator) esc.wakeLock = await navigator.wakeLock.request('screen'); }catch(_){}
+    try{
+      const fd = new FormData();
+      fd.append("file", esc.imagem, "escala.jpg");
+      const res = await fetch(window.ESCALA_URL.trim(), { method:"POST", body:fd, signal:esc.ctrl.signal });
+      let j = {};
+      try{ j = await res.json(); }catch(_){}
+      if(!res.ok) throw new Error(j.error || `O servidor recusou a foto (${res.status}).`);
+      esc.resposta = j;
+      const hoje = new Date();
+      const mes = parseInt(j.mes, 10) || (hoje.getMonth() + 1);
+      let ano = parseInt(j.ano, 10) || hoje.getFullYear();
+      if(!parseInt(j.ano, 10) && mes < hoje.getMonth() + 1 - 6) ano++; // em dezembro, escala de janeiro = ano que vem
+      document.getElementById('escMes').value = String(mes);
+      document.getElementById('escAno').value = String(ano);
+      escSalvarPrefs();
+      escMontarLista();
+      escMostrarPasso(2);
+      escStatus(`Leitura feita em ${Math.round((Date.now()-t0)/1000)} s.`);
+    }catch(e){
+      const msg = e.name === "AbortError" ? "Leitura cancelada ou demorou demais. Tente de novo." :
+        (e instanceof TypeError ? "Sem conexão com o servidor de leitura. Confira a internet e tente de novo." : e.message);
+      escStatus(msg, true);
+      acao.disabled = false;
+    }finally{
+      clearInterval(tick); clearTimeout(limite);
+      esc.lendo = false; esc.ctrl = null;
+      try{ if(esc.wakeLock) esc.wakeLock.release(); }catch(_){}
+      esc.wakeLock = null;
+    }
+  }
+  function escMontarLista(){
+    if(!esc.resposta) return;
+    const mes = parseInt(document.getElementById('escMes').value, 10);
+    const ano = parseInt(document.getElementById('escAno').value, 10);
+    const nome = document.getElementById('escNome').value.trim() || "Laís";
+    const local = document.getElementById('escLocal').value.trim();
+    esc.achados = plantoesDaEscala(esc.resposta, mes, ano, nome, local, escalaHorarios());
+    const lista = document.getElementById('escLista');
+    if(!esc.achados.length){
+      lista.innerHTML = `<div class="field-hint">Nenhum dia com o nome “${escapeHtml(nome)}” foi encontrado. Confira o nome digitado ou tente outra foto (mais reta e iluminada).</div>`;
+    } else {
+      lista.innerHTML = esc.achados.map((p, i)=>{
+        const ja = plantoes.some(x=>ehMesmoPlantao(x, p));
+        const d = parseLocalDate(p.data);
+        const quando = `${DIAS_CURTOS[d.getDay()]} ${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
+        const turno = p.turno === "noite" ? "Noite" : (p.turno === "dia" ? "Dia" : "");
+        const hora = p.horaInicio ? `${p.horaInicio}${p.horaFim ? "–" + p.horaFim : ""}` : "sem horário";
+        const tags = (ja ? `<span class="esc-tag">já cadastrado</span>` : "") + (p.outroMes ? `<span class="esc-tag">outro mês</span>` : "");
+        return `<label class="esc-item${ja ? " ja" : ""}"><input type="checkbox" data-i="${i}" ${ja ? "disabled" : (p.outroMes ? "" : "checked")}>
+          <span class="esc-txt">${quando} · ${turno ? turno + " " : ""}${hora}${tags}<span class="esc-sub">na escala: “${escapeHtml(p.nomeLido)}”</span></span></label>`;
+      }).join("");
+    }
+    escAtualizarResumo();
+  }
+  function escAtualizarResumo(){
+    const marcados = document.querySelectorAll('#escLista input:checked').length;
+    const total = esc.achados.length;
+    document.getElementById('escResumo').textContent = total ?
+      `${total} ${plural(total,"plantão encontrado","plantões encontrados")} · ${marcados} ${plural(marcados,"marcado","marcados")} para importar` : "";
+    const acao = document.getElementById('escAcao');
+    acao.textContent = marcados ? `Importar ${marcados}` : "Importar";
+    acao.disabled = !marcados;
+  }
+  function escImportar(){
+    const valor = parseFloat(document.getElementById('escValor').value);
+    if(!(valor > 0)){
+      escMostrarPasso(1);
+      escStatus("Informe o valor de cada plantão e toque em Ler escala de novo.", true);
+      document.getElementById('escValor').focus();
+      return;
+    }
+    const local = document.getElementById('escLocal').value.trim();
+    const marcados = [...document.querySelectorAll('#escLista input:checked')].map(c=>esc.achados[+c.dataset.i]);
+    const agora = Date.now();
+    const itens = marcados.map((p, i)=>({
+      id: uid(), data: p.data, horaInicio: p.horaInicio, horaFim: p.horaFim, local,
+      valor, numPacientes: null, nomesPacientes: [], obs: "Importado da foto da escala", relato: "",
+      recebido: false, createdAt: agora + i
+    }));
+    escSalvarPrefs();
+    const r = importarEscala(itens, true);
+    if(!r) return;
+    const primeiro = parseLocalDate(itens[0].data);
+    const mesEscala = parseInt(document.getElementById('escMes').value, 10) - 1;
+    const anoEscala = parseInt(document.getElementById('escAno').value, 10);
+    currentDate = isNaN(mesEscala) || isNaN(anoEscala) ? new Date(primeiro.getFullYear(), primeiro.getMonth(), 1) : new Date(anoEscala, mesEscala, 1);
+    render();
+    closeSheet();
+  }
+
+  (function iniciarEscala(){
+    const sel = document.getElementById('escMes');
+    sel.innerHTML = MESES.map((m, i)=>`<option value="${i+1}">${m.charAt(0).toUpperCase() + m.slice(1)}</option>`).join("");
+    const mostrar = ()=>{ document.getElementById('btnEscala').style.display = escalaConfigurada() ? "" : "none"; };
+    if(document.readyState === "complete") mostrar(); else window.addEventListener('load', mostrar);
+    document.getElementById('btnEscala').addEventListener('click', abrirEscala);
+    document.getElementById('escFotoBtn').addEventListener('click', ()=>document.getElementById('escFoto').click());
+    document.getElementById('escFoto').addEventListener('change', async (e)=>{
+      const f = e.target.files[0];
+      if(!f) return;
+      escStatus("Preparando a foto…");
+      try{
+        esc.imagem = await reduzirFoto(f);
+        const prev = document.getElementById('escPreview');
+        prev.src = URL.createObjectURL(esc.imagem);
+        prev.style.display = "block";
+        escStatus("Foto pronta. Confira os campos e toque em Ler escala.");
+        document.getElementById('escAcao').disabled = false;
+      }catch(_){
+        esc.imagem = null;
+        escStatus("Não consegui abrir essa foto. Tente outra (JPG ou PNG) ou um print da tela.", true);
+      }
+    });
+    document.getElementById('escAcao').addEventListener('click', ()=>{
+      if(document.getElementById('escPasso2').style.display === "none"){
+        if(!(parseFloat(document.getElementById('escValor').value) > 0)){
+          escStatus("Informe o valor de cada plantão antes de ler a escala.", true);
+          document.getElementById('escValor').focus();
+          return;
+        }
+        if(esc.imagem && !esc.lendo) escLer();
+      } else escImportar();
+    });
+    document.getElementById('escFechar').addEventListener('click', closeSheet);
+    document.getElementById('escLista').addEventListener('change', escAtualizarResumo);
+    ['escMes','escAno'].forEach(id=>document.getElementById(id).addEventListener('change', escMontarLista));
+  })();
+
   document.getElementById('importFileInput').addEventListener('change', (e)=>{
     const file = e.target.files[0];
     e.target.value = "";
@@ -2221,6 +2589,7 @@
         toast("Arquivo de backup não reconhecido");
         return;
       }
+      if(data.origem === "escala"){ importarEscala(data.plantoes || []); return; }
       const okConfirm = confirm("Importar este backup? Os itens serão mesclados com os dados que já existem neste aparelho (nada é apagado).");
       if(!okConfirm) return;
 
