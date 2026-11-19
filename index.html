@@ -774,7 +774,7 @@
   </div>
   <input type="file" id="importFileInput" accept="application/json" style="display:none;">
   <div class="last-backup" id="lastBackupText">Último backup: nunca</div>
-  <div class="last-backup" id="appVersion" style="margin-top:6px;opacity:.75;">Versão do app: 23 · 19/11/2026</div>
+  <div class="last-backup" id="appVersion" style="margin-top:6px;opacity:.75;">Versão do app: 24 · 19/11/2026</div>
   <div class="sheet-actions">
     <button class="btn btn-ghost" id="btnCloseBackup" style="flex:1;">Fechar</button>
   </div>
@@ -1084,7 +1084,8 @@
     if(filter==="pendente") filtered = inMonth.filter(p=>!p.recebido);
     if(filter==="recebido") filtered = inMonth.filter(p=>p.recebido);
 
-    filtered.sort((a,b)=> parseLocalDate(b.data) - parseLocalDate(a.data) || b.createdAt-a.createdAt);
+    // Ordem crescente: data, depois horário de início (sem horário vem antes), depois cadastro.
+    filtered.sort((a,b)=> (a.data||"").localeCompare(b.data||"") || (a.horaInicio||"").localeCompare(b.horaInicio||"") || (a.createdAt||0)-(b.createdAt||0));
 
     const list = document.getElementById('list');
     list.innerHTML = "";

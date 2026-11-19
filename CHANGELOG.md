@@ -2,6 +2,10 @@
 
 A versão aparece no app em **Backup**, embaixo de "Último backup".
 
+## v24 · 19/11/2026
+- A lista de plantões do mês agora aparece em ordem de data (do dia 1 para o
+  fim do mês); no mesmo dia, pelo horário de início.
+
 ## v23 · 19/11/2026
 - Novo botão **📷 Importar escala por foto** na aba Plantões: tire foto da escala
   do mês, o app lê e separa só os dias com o seu nome (dia 08–20h, noite 20–08h,
