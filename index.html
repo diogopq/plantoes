@@ -170,8 +170,9 @@
   .tagline{font-size:12.5px;color:var(--on-header-soft);margin-top:10px;}
   .header-actions{display:flex;gap:4px;flex:none;}
   .tabs{display:flex;gap:4px;margin-top:16px;background:rgba(255,255,255,0.08);border-radius:12px;padding:4px;}
-  .tab-btn{flex:1;border:none;background:none;color:var(--on-header-soft);padding:11px 9px;border-radius:9px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .tab-btn{flex:1;min-width:0;border:none;background:none;color:var(--on-header-soft);padding:11px 2px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
   .tab-btn.active{background:var(--pill-bg);color:#1F4A3D;}
+  @media (max-width:370px){ .tab-btn{font-size:12px;} }
   .patients-summary{margin-top:16px;font-size:13px;color:var(--on-header-soft);}
   .patients-summary strong{color:#fff;font-family:'JetBrains Mono',monospace;font-size:15px;}
   #pacientesView .search-box{margin-top:18px;}
@@ -548,6 +549,7 @@
       <button class="tab-btn active" data-tab="plantoes">Plantões</button>
       <button class="tab-btn" data-tab="pacientes">Pacientes</button>
       <button class="tab-btn" data-tab="agenda">Agenda</button>
+      <button class="tab-btn" data-tab="comissoes">Comissões</button>
     </div>
 
     <div id="plantoesHeaderBlock">
@@ -575,6 +577,19 @@
         <button id="nextMonthAgenda" aria-label="Próximo mês">›</button>
       </div>
       <div class="patients-summary"><strong id="statAgendaTotal">0</strong> <span id="lblAgendaTotal">compromissos este mês</span></div>
+    </div>
+
+    <div id="comissoesHeaderBlock" style="display:none;">
+      <div class="month-nav">
+        <button id="prevMonthCom" aria-label="Mês anterior">‹</button>
+        <div class="month-label" id="monthLabelCom">—</div>
+        <button id="nextMonthCom" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="num" id="statComTotal">R$ 0</span><span class="lbl">Total</span></div>
+        <div class="stat paid"><span class="num" id="statComPaid">R$ 0</span><span class="lbl">Recebido</span></div>
+        <div class="stat pend"><span class="num" id="statComPend">R$ 0</span><span class="lbl">A receber</span></div>
+      </div>
     </div>
   </div>
 </header>
@@ -611,6 +626,10 @@
 
   <div id="agendaView" style="display:none;">
     <div class="list" id="listAgenda"></div>
+  </div>
+
+  <div id="comissoesView" style="display:none;">
+    <div class="list" id="listComissoes"></div>
   </div>
 </div>
 
@@ -764,17 +783,54 @@
   </div>
 </div>
 
+<div class="sheet" id="sheetComissao">
+  <div class="sheet-handle"></div>
+  <h2 id="sheetTitleCom">Nova comissão</h2>
+  <div class="field">
+    <label for="fComData">Data</label>
+    <input type="date" id="fComData">
+  </div>
+  <div class="field">
+    <label for="fComDescricao">Descrição <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <input type="text" id="fComDescricao" placeholder="Ex: Comissão de cirurgias, vendas, exames...">
+  </div>
+  <div class="field">
+    <label for="fComLocal">Local <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <input type="text" id="fComLocal" list="comLocais" placeholder="Ex: SoulCat">
+    <datalist id="comLocais"></datalist>
+  </div>
+  <div class="field">
+    <label for="fComValor">Valor (R$)</label>
+    <input type="number" id="fComValor" inputmode="decimal" step="0.01" min="0" placeholder="0,00">
+  </div>
+  <div class="field">
+    <div class="check-row">
+      <input type="checkbox" id="fComRecebido">
+      <label for="fComRecebido">Já recebida</label>
+    </div>
+  </div>
+  <div class="field">
+    <label for="fComObs">Observações <span style="text-transform:none;font-weight:500;">(opcional)</span></label>
+    <textarea id="fComObs" placeholder="Ex: referente a outubro, pago por Pix..."></textarea>
+  </div>
+  <button class="btn-delete" id="btnDeleteCom" style="display:none;">Excluir comissão</button>
+  <div class="sheet-actions">
+    <button class="btn btn-ghost" id="btnCancelCom">Cancelar</button>
+    <button class="btn btn-primary" id="btnSaveCom">Salvar</button>
+  </div>
+</div>
+
 <div class="sheet" id="sheetBackup">
   <div class="sheet-handle"></div>
   <h2>Backup dos dados</h2>
-  <p class="backup-sheet-text">Seus plantões e pacientes ficam salvos apenas neste aparelho. Exporte um backup de vez em quando e guarde o arquivo em um lugar seguro (e-mail, Drive, etc.) para não correr o risco de perder tudo se trocar de celular ou limpar o navegador.</p>
+  <p class="backup-sheet-text">Seus plantões, pacientes, agenda e comissões ficam salvos apenas neste aparelho. Exporte um backup de vez em quando e guarde o arquivo em um lugar seguro (e-mail, Drive, etc.) para não correr o risco de perder tudo se trocar de celular ou limpar o navegador.</p>
   <div class="backup-row">
     <button class="btn btn-primary" id="btnExportBackup">⬇ Exportar backup (.json)</button>
     <button class="btn btn-ghost" id="btnImportBackup">⬆ Importar backup</button>
   </div>
   <input type="file" id="importFileInput" accept="application/json" style="display:none;">
   <div class="last-backup" id="lastBackupText">Último backup: nunca</div>
-  <div class="last-backup" id="appVersion" style="margin-top:6px;opacity:.75;">Versão do app: 24 · 19/11/2026</div>
+  <div class="last-backup" id="appVersion" style="margin-top:6px;opacity:.75;">Versão do app: 25 · 23/11/2026</div>
   <div class="sheet-actions">
     <button class="btn btn-ghost" id="btnCloseBackup" style="flex:1;">Fechar</button>
   </div>
@@ -853,6 +909,7 @@
   const STORAGE_KEY = "vet-plantoes-v1";
   const PACIENTES_KEY = "vet-pacientes-v1";
   const AGENDA_KEY = "vet-agenda-v1";
+  const COMISSOES_KEY = "vet-comissoes-v1";
   const LAST_BACKUP_KEY = "vet-last-backup";
   const PIN_KEY = "vet-plantoes-pin";
   const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
@@ -861,12 +918,15 @@
   let plantoes = load();
   let pacientes = loadPacientes();
   let agendaItems = loadAgenda();
+  let comissoes = loadComissoes();
   let currentDate = new Date();
   let currentDateAgenda = new Date();
   let filter = "todos";
   let editingId = null;
   let editingPacId = null;
   let editingAgendaId = null;
+  let editingComId = null;
+  let currentDateCom = new Date();
   let activeTab = "plantoes";
 
   function load(){
@@ -892,6 +952,16 @@
       const raw = localStorage.getItem(AGENDA_KEY);
       return raw ? JSON.parse(raw) : [];
     }catch(e){ return []; }
+  }
+  function loadComissoes(){
+    try{
+      const raw = localStorage.getItem(COMISSOES_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+  function saveComissoes(){
+    localStorage.setItem(COMISSOES_KEY, JSON.stringify(comissoes));
   }
   function saveAgenda(){
     localStorage.setItem(AGENDA_KEY, JSON.stringify(agendaItems));
@@ -1349,6 +1419,9 @@
     const sa = document.getElementById('sheetAgenda');
     const se = document.getElementById('sheetEscala');
     if(se) se.classList.remove('open');
+    const sc = document.getElementById('sheetComissao');
+    if(sc) sc.classList.remove('open');
+    editingComId = null;
     if(sp) sp.classList.remove('open');
     if(sb) sb.classList.remove('open');
     if(sn) sn.classList.remove('open');
@@ -1398,6 +1471,7 @@
   document.getElementById('fabAdd').addEventListener('click', ()=>{
     if(activeTab === "plantoes") openSheet(null);
     else if(activeTab === "pacientes") openSheetPaciente(null);
+    else if(activeTab === "comissoes") openSheetComissao(null);
     else openSheetAgenda(null);
   });
   document.getElementById('btnCancel').addEventListener('click', closeSheet);
@@ -1726,7 +1800,7 @@
   });
 
   /* ================= TABS ================= */
-  const TAB_FAB_LABELS = { plantoes: "Adicionar plantão", pacientes: "Adicionar paciente", agenda: "Adicionar compromisso" };
+  const TAB_FAB_LABELS = { plantoes: "Adicionar plantão", pacientes: "Adicionar paciente", agenda: "Adicionar compromisso", comissoes: "Adicionar comissão" };
 
   document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1740,10 +1814,13 @@
       document.getElementById('plantoesView').style.display = activeTab === "plantoes" ? "block" : "none";
       document.getElementById('pacientesView').style.display = activeTab === "pacientes" ? "block" : "none";
       document.getElementById('agendaView').style.display = activeTab === "agenda" ? "block" : "none";
+      document.getElementById('comissoesHeaderBlock').style.display = activeTab === "comissoes" ? "block" : "none";
+      document.getElementById('comissoesView').style.display = activeTab === "comissoes" ? "block" : "none";
       document.getElementById('fabAdd').setAttribute('aria-label', TAB_FAB_LABELS[activeTab] || 'Adicionar');
 
       if(activeTab === "pacientes") renderPacientes();
       if(activeTab === "agenda") renderAgenda();
+      if(activeTab === "comissoes") renderComissoes();
     });
   });
 
@@ -1946,6 +2023,159 @@
       renderAgenda();
       render();
       toast("Compromisso restaurado");
+    });
+  });
+
+  /* ================= COMISSÕES ================= */
+  // Comissões recebidas (ou a receber). Ficam só no aparelho (não vão ao Firestore).
+  function renderComissoes(){
+    const y = currentDateCom.getFullYear(), m = currentDateCom.getMonth();
+    document.getElementById('monthLabelCom').textContent = MESES[m] + " de " + y;
+    const inMonth = comissoes.filter(c=>{
+      const d = parseLocalDate(c.data);
+      return d.getFullYear()===y && d.getMonth()===m;
+    });
+    const total = inMonth.reduce((s,c)=>s+Number(c.valor||0),0);
+    const recebido = inMonth.filter(c=>c.recebido).reduce((s,c)=>s+Number(c.valor||0),0);
+    document.getElementById('statComTotal').textContent = fmtMoney(total);
+    document.getElementById('statComPaid').textContent = fmtMoney(recebido);
+    document.getElementById('statComPend').textContent = fmtMoney(total - recebido);
+
+    const sorted = [...inMonth].sort((a,b)=> (a.data||"").localeCompare(b.data||"") || (a.createdAt||0)-(b.createdAt||0));
+    const listEl = document.getElementById('listComissoes');
+    listEl.innerHTML = "";
+    if(!sorted.length){
+      listEl.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4"><rect x="16" y="30" width="68" height="42" rx="8"/><circle cx="50" cy="51" r="9"/><path d="M26 40v22M74 40v22"/></svg>
+        <p>Nenhuma comissão neste mês</p>
+        <div class="sub">Toque no + para registrar a primeira</div>
+      </div>`;
+      return;
+    }
+    sorted.forEach(c=>{
+      const d = parseLocalDate(c.data);
+      const card = document.createElement('div');
+      card.className = "card tappable" + (c.recebido ? " is-paid" : "");
+      card.dataset.id = c.id;
+      card.innerHTML = `
+        <div class="stripe"></div>
+        <div class="card-body">
+          <div class="card-top">
+            <div>
+              <div class="date-badge">${String(d.getDate()).padStart(2,'0')} de ${MESES[d.getMonth()]}</div>
+              <div class="weekday">${DIAS_SEMANA[d.getDay()]}</div>
+            </div>
+            <div class="valor">${fmtMoney(c.valor)}</div>
+          </div>
+          <div class="local">${escapeHtml(c.descricao || "Comissão")}</div>
+          ${c.local ? `<div class="obs">📍 ${escapeHtml(c.local)}</div>` : ""}
+          ${c.obs ? `<div class="obs">${escapeHtml(c.obs)}</div>` : ""}
+          <div class="row-bottom">
+            <div class="status-row">
+              ${c.recebido
+                ? `<span class="status-pill paid">✓ Recebida</span>`
+                : `<span class="status-pill pend">A receber</span><button class="mark-paid" data-togglecom="${c.id}">Marcar como recebida</button>`}
+            </div>
+            <div class="card-actions">
+              <button class="icon-btn" aria-label="Editar comissão">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>`;
+      listEl.appendChild(card);
+    });
+    listEl.querySelectorAll('[data-togglecom]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const item = comissoes.find(x=>x.id===btn.dataset.togglecom);
+        if(!item) return;
+        item.recebido = true; saveComissoes(); renderComissoes();
+        toastUndo("Marcada como recebida", ()=>{ item.recebido = false; saveComissoes(); renderComissoes(); });
+      });
+    });
+    listEl.querySelectorAll('.card.tappable').forEach(card=>{
+      card.addEventListener('click', ()=> openSheetComissao(card.dataset.id));
+    });
+  }
+
+  document.getElementById('prevMonthCom').addEventListener('click', ()=>{
+    currentDateCom = new Date(currentDateCom.getFullYear(), currentDateCom.getMonth()-1, 1);
+    renderComissoes();
+  });
+  document.getElementById('nextMonthCom').addEventListener('click', ()=>{
+    currentDateCom = new Date(currentDateCom.getFullYear(), currentDateCom.getMonth()+1, 1);
+    renderComissoes();
+  });
+
+  const sheetComissao = document.getElementById('sheetComissao');
+  function openSheetComissao(id){
+    editingComId = id || null;
+    const isEdit = !!editingComId;
+    document.getElementById('sheetTitleCom').textContent = isEdit ? "Editar comissão" : "Nova comissão";
+    document.getElementById('btnDeleteCom').style.display = isEdit ? "block" : "none";
+    // sugestões de local: locais já usados em plantões e comissões
+    const locais = [...new Set(plantoes.concat(comissoes).map(x=>(x.local || "").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    document.getElementById('comLocais').innerHTML = locais.map(l=>`<option value="${escapeHtml(l)}"></option>`).join("");
+    if(isEdit){
+      const item = comissoes.find(x=>x.id===editingComId);
+      document.getElementById('fComData').value = item.data || "";
+      document.getElementById('fComDescricao').value = item.descricao || "";
+      document.getElementById('fComLocal').value = item.local || "";
+      document.getElementById('fComValor').value = item.valor || "";
+      document.getElementById('fComRecebido').checked = !!item.recebido;
+      document.getElementById('fComObs').value = item.obs || "";
+    } else {
+      const y = currentDateCom.getFullYear(), m = currentDateCom.getMonth();
+      const today = new Date();
+      const def = (today.getFullYear()===y && today.getMonth()===m) ? today : new Date(y,m,1);
+      document.getElementById('fComData').value = isoDia(def.getFullYear(), def.getMonth(), def.getDate());
+      document.getElementById('fComDescricao').value = "";
+      document.getElementById('fComLocal').value = "";
+      document.getElementById('fComValor').value = "";
+      document.getElementById('fComRecebido').checked = true;
+      document.getElementById('fComObs').value = "";
+    }
+    overlay.classList.add('open');
+    sheetComissao.classList.add('open');
+  }
+
+  document.getElementById('btnCancelCom').addEventListener('click', closeSheet);
+  document.getElementById('btnSaveCom').addEventListener('click', ()=>{
+    const dataVal = document.getElementById('fComData').value;
+    const descricao = document.getElementById('fComDescricao').value.trim();
+    const local = document.getElementById('fComLocal').value.trim();
+    const valor = parseFloat(document.getElementById('fComValor').value);
+    const recebido = document.getElementById('fComRecebido').checked;
+    const obs = document.getElementById('fComObs').value.trim();
+    if(!dataVal){ toast("Informe a data"); return; }
+    if(!valor || valor<=0){ toast("Informe um valor válido"); return; }
+    if(editingComId){
+      const item = comissoes.find(x=>x.id===editingComId);
+      Object.assign(item, {data:dataVal, descricao, local, valor, recebido, obs});
+      toast("Comissão atualizada");
+    } else {
+      comissoes.push({id:uid(), data:dataVal, descricao, local, valor, recebido, obs, createdAt:Date.now()});
+      toast("Comissão salva");
+    }
+    saveComissoes();
+    const d = parseLocalDate(dataVal);
+    currentDateCom = new Date(d.getFullYear(), d.getMonth(), 1);
+    closeSheet();
+    renderComissoes();
+  });
+  document.getElementById('btnDeleteCom').addEventListener('click', ()=>{
+    if(!editingComId) return;
+    const removida = comissoes.find(x=>x.id===editingComId);
+    comissoes = comissoes.filter(x=>x.id!==editingComId);
+    saveComissoes();
+    closeSheet();
+    renderComissoes();
+    toastUndo("Comissão excluída", ()=>{
+      comissoes.push(removida);
+      saveComissoes();
+      renderComissoes();
+      toast("Comissão restaurada");
     });
   });
 
@@ -2244,7 +2474,8 @@
       exportedAt: new Date().toISOString(),
       plantoes: plantoes,
       pacientes: pacientes,
-      agendaItems: agendaItems
+      agendaItems: agendaItems,
+      comissoes: comissoes
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
     const url = URL.createObjectURL(blob);
@@ -2586,7 +2817,7 @@
         toast("Arquivo inválido");
         return;
       }
-      if(!data || (!Array.isArray(data.plantoes) && !Array.isArray(data.pacientes) && !Array.isArray(data.agendaItems))){
+      if(!data || (!Array.isArray(data.plantoes) && !Array.isArray(data.pacientes) && !Array.isArray(data.agendaItems) && !Array.isArray(data.comissoes))){
         toast("Arquivo de backup não reconhecido");
         return;
       }
@@ -2594,7 +2825,7 @@
       const okConfirm = confirm("Importar este backup? Os itens serão mesclados com os dados que já existem neste aparelho (nada é apagado).");
       if(!okConfirm) return;
 
-      let addedP=0, updP=0, addedPac=0, updPac=0, addedAg=0, updAg=0;
+      let addedP=0, updP=0, addedPac=0, updPac=0, addedAg=0, updAg=0, addedCom=0, updCom=0;
       (data.plantoes||[]).forEach(item=>{
         if(!item || !item.id) return;
         const idx = plantoes.findIndex(x=>x.id===item.id);
@@ -2611,14 +2842,21 @@
         const idx = agendaItems.findIndex(x=>x.id===item.id);
         if(idx>=0){ agendaItems[idx] = item; updAg++; } else { agendaItems.push(item); addedAg++; }
       });
+      (data.comissoes||[]).forEach(item=>{
+        if(!item || !item.id) return;
+        const idx = comissoes.findIndex(x=>x.id===item.id);
+        if(idx>=0){ comissoes[idx] = item; updCom++; } else { comissoes.push(item); addedCom++; }
+      });
       save();
       savePacientes();
       saveAgenda();
+      saveComissoes();
       render();
       renderPacientes();
       renderAgenda();
+      renderComissoes();
       refreshPatientsDatalist();
-      toast(`Importado: ${addedP+addedPac+addedAg} novo(s), ${updP+updPac+updAg} atualizado(s)`);
+      toast(`Importado: ${addedP+addedPac+addedAg+addedCom} novo(s), ${updP+updPac+updAg+updCom} atualizado(s)`);
     };
     reader.readAsText(file);
   });

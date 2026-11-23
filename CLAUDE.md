@@ -62,8 +62,9 @@ Sem o passo 1 a faixa "Nova versão disponível" não aparece no celular.
 
 ## Dados — cuidado
 
-- Plantões, pacientes e agenda ficam **só no aparelho** (`localStorage`:
-  `vet-plantoes-v1`, `vet-pacientes-v1`, `vet-agenda-v1`). Só data/local da
+- Plantões, pacientes, agenda e comissões ficam **só no aparelho** (`localStorage`:
+  `vet-plantoes-v1`, `vet-pacientes-v1`, `vet-agenda-v1`, `vet-comissoes-v1`;
+  backup leva `comissoes`). Comissões nunca vão ao Firestore. Só data/local da
   agenda vão ao Firestore para o lembrete.
 - Nunca mudar essas chaves nem o formato do backup sem migração.
 - Nunca orientar a apagar/reinstalar o app ou "limpar dados do site": apaga

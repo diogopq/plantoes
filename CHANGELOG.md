@@ -2,6 +2,13 @@
 
 A versão aparece no app em **Backup**, embaixo de "Último backup".
 
+## v25 · 23/11/2026
+- Nova aba **Comissões** para registrar as comissões recebidas: data,
+  descrição, local, valor, se já foi recebida e observações.
+- Totais do mês (Total / Recebido / A receber), lista em ordem de data e botão
+  "Marcar como recebida".
+- As comissões entram no backup (Exportar/Importar) e ficam só no aparelho.
+
 ## v24 · 19/11/2026
 - A lista de plantões do mês agora aparece em ordem de data (do dia 1 para o
   fim do mês); no mesmo dia, pelo horário de início.
